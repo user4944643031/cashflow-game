@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cashflow Game - Multiplayer</title>
+    <title>Cashflow Game - Multiplayer Online</title>
     <style>
       * {
         box-sizing: border-box;
@@ -38,7 +38,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(9, 13, 22, 0.96);
+        background: rgba(9, 13, 22, 0.97);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -50,7 +50,7 @@
         border-radius: 16px;
         padding: 24px;
         width: 100%;
-        max-width: 620px;
+        max-width: 580px;
         max-height: 90vh;
         overflow-y: auto;
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
@@ -62,28 +62,12 @@
         text-align: center;
       }
 
-      .slot-player {
-        background: #0b1329;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 10px;
-      }
-      .slot-player h4 {
-        font-size: 13px;
-        margin-bottom: 6px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .slot-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
+      .form-group {
+        margin-bottom: 12px;
       }
       .form-group label {
         display: block;
-        font-size: 10px;
+        font-size: 11px;
         font-weight: bold;
         text-transform: uppercase;
         color: #cbd5e1;
@@ -92,49 +76,91 @@
       .form-group select,
       .form-group input {
         width: 100%;
-        background: #131d2e;
+        background: #0b1329;
         color: #f8fafc;
         border: 1px solid #334155;
-        padding: 6px 8px;
+        padding: 8px 10px;
         border-radius: 6px;
-        font-size: 12px;
+        font-size: 13px;
         outline: none;
       }
 
-      .btn-start {
+      .btn-primary {
         background: #2563eb;
         color: white;
         border: none;
         padding: 12px;
         border-radius: 8px;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: bold;
         width: 100%;
         cursor: pointer;
-        margin-top: 10px;
+        transition: 0.2s;
       }
-      .btn-start:hover {
+      .btn-primary:hover {
         background: #1d4ed8;
       }
-
-      .rank-table {
+      .btn-secondary {
+        background: #334155;
+        color: #cbd5e1;
+        border: none;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: bold;
         width: 100%;
-        border-collapse: collapse;
-        margin-top: 12px;
-        font-size: 12px;
+        cursor: pointer;
+        margin-top: 8px;
       }
-      .rank-table th,
-      .rank-table td {
-        padding: 8px 6px;
-        text-align: left;
-        border-bottom: 1px solid #1e293b;
-      }
-      .rank-table th {
-        color: #38bdf8;
-        font-size: 11px;
-        text-transform: uppercase;
+      .btn-secondary:hover {
+        background: #475569;
       }
 
+      /* Lista de Participantes no Lobby */
+      .lobby-players-list {
+        background: #0b1329;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 12px;
+        margin: 14px 0;
+      }
+      .lobby-player-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        border-bottom: 1px solid #1e293b;
+        font-size: 13px;
+      }
+      .lobby-player-item:last-child {
+        border-bottom: none;
+      }
+
+      .share-box {
+        background: #07101f;
+        border: 1px dashed #38bdf8;
+        border-radius: 8px;
+        padding: 10px;
+        margin: 12px 0;
+        text-align: center;
+      }
+      .share-box p {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-bottom: 6px;
+      }
+      .btn-copy {
+        background: #0284c7;
+        color: white;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      /* Layout Mesa Principal */
       .game-wrapper {
         display: flex;
         gap: 20px;
@@ -179,9 +205,6 @@
         font-weight: bold;
         border-radius: 5px;
         cursor: pointer;
-      }
-      .btn-top:hover {
-        background: #475569;
       }
 
       .grid-ratos {
@@ -255,7 +278,6 @@
         font-weight: bold;
       }
 
-      /* Container de Peões Múltiplos */
       .pawns-holder {
         position: absolute;
         top: -6px;
@@ -286,7 +308,6 @@
         justify-content: space-between;
       }
 
-      /* Grid de 2 a 4 jogadores */
       .players-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -499,74 +520,142 @@
   <body>
     <canvas id="confetti-canvas"></canvas>
 
-    <!-- Overlay Setup Multiplayer -->
-    <div class="overlay" id="setup-overlay">
+    <!-- Overlay 1: Criar ou Entrar em Sala -->
+    <div class="overlay" id="entry-overlay">
       <div class="modal-card">
-        <h2>👥 Configurar Partida Multiplayer</h2>
-        <div
+        <h2>🎲 Cashflow Online Multiplayer</h2>
+        <p
           style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: center;
+            margin-bottom: 14px;
           "
         >
-          <label style="font-size: 12px; font-weight: bold"
-            >Número de Jogadores:</label
-          >
-          <select
-            id="num-jogadores"
-            style="
-              background: #0b1329;
-              color: #fff;
-              border: 1px solid #334155;
-              padding: 4px 8px;
-              border-radius: 6px;
-            "
-            onchange="renderizarSlotsSetup()"
-          >
-            <option value="2">2 Jogadores</option>
-            <option value="3">3 Jogadores</option>
-            <option value="4" selected>4 Jogadores</option>
-          </select>
+          Jogue com amigos em tempo real através do link de convite.
+        </p>
+
+        <div class="form-group">
+          <label>Seu Nome</label>
+          <input type="text" id="user-nome" placeholder="Digite seu nome" />
+        </div>
+        <div class="form-group">
+          <label>Sua Profissão</label>
+          <select id="user-prof"></select>
+        </div>
+        <div class="form-group">
+          <label>Seu Sonho</label>
+          <select id="user-sonho"></select>
         </div>
 
-        <div id="slots-container"></div>
-
-        <button class="btn-start" onclick="iniciarMultiplayer()">
-          Iniciar Partida
-        </button>
-      </div>
-    </div>
-
-    <!-- Overlay Ranking -->
-    <div class="overlay" id="ranking-overlay" style="display: none">
-      <div class="modal-card">
-        <h2>🏆 Hall da Fama</h2>
-        <div style="max-height: 250px; overflow-y: auto">
-          <table class="rank-table">
-            <thead>
-              <tr>
-                <th>Vencedor</th>
-                <th>Profissão</th>
-                <th>Turnos</th>
-                <th>Caixa Final</th>
-                <th>Data</th>
-              </tr>
-            </thead>
-            <tbody id="ranking-tbody"></tbody>
-          </table>
+        <div style="display: flex; gap: 10px; margin-top: 14px">
+          <button class="btn-primary" onclick="criarNovaSala()">
+            Criar Nova Sala
+          </button>
         </div>
-        <button
-          class="btn-start"
-          style="margin-top: 14px; background: #475569"
-          onclick="fecharRanking()"
+
+        <div
+          style="
+            text-align: center;
+            margin: 12px 0;
+            font-size: 12px;
+            color: #64748b;
+          "
         >
-          Fechar
-        </button>
+          — OU ENTRAR COM CÓDIGO —
+        </div>
+
+        <div style="display: flex; gap: 8px">
+          <input
+            type="text"
+            id="input-codigo-sala"
+            placeholder="CÓDIGO (ex: A8F3K9)"
+            style="
+              text-transform: uppercase;
+              font-weight: bold;
+              letter-spacing: 1px;
+            "
+          />
+          <button
+            class="btn-secondary"
+            style="margin-top: 0; width: 120px"
+            onclick="entrarEmSala()"
+          >
+            Entrar
+          </button>
+        </div>
       </div>
     </div>
 
+    <!-- Overlay 2: Sala de Espera (Lobby) -->
+    <div class="overlay" id="lobby-overlay" style="display: none">
+      <div class="modal-card">
+        <h2>
+          👥 Sala de Espera (<span
+            id="lobby-codigo-titulo"
+            style="color: #facc15"
+            >-</span
+          >)
+        </h2>
+
+        <div class="share-box">
+          <p>Envie o link abaixo para seus amigos entrarem direto:</p>
+          <button class="btn-copy" onclick="copiarLinkConvite()">
+            📋 Copiar Link de Convite
+          </button>
+          <span
+            id="copy-feedback"
+            style="
+              font-size: 11px;
+              color: #4ade80;
+              display: block;
+              margin-top: 4px;
+            "
+          ></span>
+        </div>
+
+        <div class="lobby-players-list">
+          <div
+            style="
+              font-size: 11px;
+              font-weight: bold;
+              color: #38bdf8;
+              text-transform: uppercase;
+              margin-bottom: 6px;
+            "
+          >
+            Participantes na Sala (<span id="lobby-count">0</span>/4):
+          </div>
+          <div id="lobby-players-container"></div>
+        </div>
+
+        <div id="host-controls">
+          <button class="btn-secondary" onclick="adicionarBotLobby()">
+            + Adicionar Robô (IA)
+          </button>
+          <button
+            class="btn-primary"
+            style="margin-top: 8px"
+            onclick="iniciarPartidaLobby()"
+          >
+            🚀 Iniciar Partida
+          </button>
+        </div>
+        <p
+          id="guest-waiting-msg"
+          style="
+            font-size: 12px;
+            color: #facc15;
+            text-align: center;
+            display: none;
+          "
+        >
+          Aguardando o anfitrião iniciar a partida...
+        </p>
+      </div>
+    </div>
+
+    <!-- Mesa Principal de Jogo -->
     <div class="game-wrapper">
       <div class="boards-column">
         <div class="board-box">
@@ -575,11 +664,8 @@
               🐭 Corrida dos Ratos
             </div>
             <div class="btn-group-top">
-              <button class="btn-top" onclick="abrirRanking()">
-                🏆 Ranking
-              </button>
-              <button class="btn-top" onclick="abrirSetup()">
-                🔄 Novo Jogo
+              <button class="btn-top" onclick="copiarLinkConvite()">
+                🔗 Link Sala
               </button>
             </div>
           </div>
@@ -598,7 +684,6 @@
 
       <div class="sidebar">
         <div>
-          <!-- Grid de Jogadores -->
           <div class="players-grid" id="players-grid"></div>
 
           <div class="bank-box" id="bank-panel">
@@ -618,7 +703,7 @@
           </div>
 
           <div class="assets-box">
-            <h4 id="label-ativos-jogador">Ativos do Jogador Atual</h4>
+            <h4 id="label-ativos-jogador">Meus Ativos</h4>
             <div id="assets-list">
               <span style="color: #64748b; font-size: 11px"
                 >Nenhum ativo adquirido ainda.</span
@@ -664,10 +749,20 @@
             </div>
 
             <div class="card-actions" id="actions-investir">
-              <button class="btn-comprar" onclick="comprarAtivo()">
+              <button
+                class="btn-comprar"
+                id="btn-modal-comprar"
+                onclick="comprarAtivo()"
+              >
                 Comprar Ativo
               </button>
-              <button class="btn-passar" onclick="passarVez()">Passar</button>
+              <button
+                class="btn-passar"
+                id="btn-modal-passar"
+                onclick="passarVez()"
+              >
+                Passar
+              </button>
             </div>
 
             <div
@@ -675,14 +770,22 @@
               id="actions-mercado"
               style="display: none"
             >
-              <button class="btn-vender" onclick="venderAtivoMercado()">
+              <button
+                class="btn-vender"
+                id="btn-modal-vender"
+                onclick="venderAtivoMercado()"
+              >
                 💰 Vender ao Mercado
               </button>
               <button class="btn-passar" onclick="passarVez()">Manter</button>
             </div>
 
             <div id="actions-besteira" style="display: none; margin-top: 8px">
-              <button class="btn-pagar-despesa" onclick="pagarBesteira()">
+              <button
+                class="btn-pagar-despesa"
+                id="btn-modal-pagar"
+                onclick="pagarBesteira()"
+              >
                 💸 Pagar Despesa
               </button>
             </div>
@@ -698,18 +801,25 @@
             🚀 ENTRAR NA PISTA RÁPIDA (FAST TRACK)
           </button>
           <button id="btn-dado" class="btn-rolar" onclick="fazerJogadaHumano()">
-            🎲 Sua Vez: Rolar Dado
+            🎲 Rolar Dado
           </button>
           <div id="log" style="margin-top: 8px">
-            Role o dado para iniciar sua jogada.
+            Aguardando o início da rodada...
           </div>
         </div>
       </div>
     </div>
 
     <script>
-      let dadosOpcoes = { profissoes: [], sonhos: [] };
+      let myClientId =
+        localStorage.getItem("cashflow_client_id") ||
+        "usr_" + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem("cashflow_client_id", myClientId);
+
+      let currentSalaCodigo = null;
+      let ws = null;
       let estadoJogo = null;
+      let dadosOpcoes = { profissoes: [], sonhos: [] };
       let precoAcaoAtiva = 0;
       const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -881,114 +991,205 @@
         });
       }
 
-      async function carregarOpcoesSetup() {
+      async function carregarOpcoes() {
         const res = await fetch("/setup_opcoes");
         dadosOpcoes = await res.json();
-        renderizarSlotsSetup();
-      }
 
-      function renderizarSlotsSetup() {
-        const n = parseInt(document.getElementById("num-jogadores").value);
-        const container = document.getElementById("slots-container");
-        container.innerHTML = "";
+        document.getElementById("user-prof").innerHTML = dadosOpcoes.profissoes
+          .map(
+            (p) =>
+              `<option value="${p.nome}">${p.nome} (Salário: R$ ${p.salario})</option>`,
+          )
+          .join("");
 
-        const padraoNomes = ["Jogador 1", "IA Alpha", "Jogador 2", "IA Beta"];
-        const icones = ["🐭", "🤖", "🐱", "🦊"];
+        document.getElementById("user-sonho").innerHTML = dadosOpcoes.sonhos
+          .map((s) => `<option value="${s.titulo}">${s.titulo}</option>`)
+          .join("");
 
-        for (let i = 0; i < n; i++) {
-          const isBot = i > 0;
-          container.innerHTML += `
-                    <div class="slot-player">
-                        <h4>${icones[i]} Participante ${i + 1}</h4>
-                        <div class="slot-grid">
-                            <div class="form-group">
-                                <label>Nome</label>
-                                <input type="text" id="slot-nome-${i}" value="${padraoNomes[i]}">
-                            </div>
-                            <div class="form-group">
-                                <label>Tipo de Jogador</label>
-                                <select id="slot-tipo-${i}">
-                                    <option value="humano" ${!isBot ? "selected" : ""}>👤 Humano</option>
-                                    <option value="bot" ${isBot ? "selected" : ""}>🤖 Robô / IA</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Profissão</label>
-                                <select id="slot-prof-${i}">
-                                    ${dadosOpcoes.profissoes.map((p) => `<option value="${p.nome}" ${p.nome === dadosOpcoes.profissoes[i % dadosOpcoes.profissoes.length].nome ? "selected" : ""}>${p.nome} (R$ ${p.salario})</option>`).join("")}
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Sonho</label>
-                                <select id="slot-sonho-${i}">
-                                    ${dadosOpcoes.sonhos.map((s) => `<option value="${s.titulo}" ${s.titulo === dadosOpcoes.sonhos[i % dadosOpcoes.sonhos.length].titulo ? "selected" : ""}>${s.titulo}</option>`).join("")}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                `;
+        // Checa se há parâmetro ?sala=XXXXXX na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const salaUrl = urlParams.get("sala");
+        if (salaUrl) {
+          document.getElementById("input-codigo-sala").value =
+            salaUrl.toUpperCase();
         }
       }
 
-      async function iniciarMultiplayer() {
-        const n = parseInt(document.getElementById("num-jogadores").value);
-        const jogadores = [];
-        for (let i = 0; i < n; i++) {
-          jogadores.append
-            ? null
-            : jogadores.push({
-                nome: document.getElementById(`slot-nome-${i}`).value,
-                is_bot:
-                  document.getElementById(`slot-tipo-${i}`).value === "bot",
-                profissao: document.getElementById(`slot-prof-${i}`).value,
-                sonho: document.getElementById(`slot-sonho-${i}`).value,
-              });
-        }
+      function conectarWebSocket(codigo) {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        ws = new WebSocket(
+          `${protocol}//${window.location.host}/ws/${codigo}/${myClientId}`,
+        );
 
-        const res = await fetch("/iniciar_multi", {
+        ws.onmessage = async (event) => {
+          const data = JSON.parse(event.data);
+
+          if (data.tipo === "lobby_atualizado") {
+            atualizarLobbyUI(data.sala);
+          } else if (
+            data.tipo === "jogo_iniciado" ||
+            data.tipo === "sync_jogo"
+          ) {
+            document.getElementById("entry-overlay").style.display = "none";
+            document.getElementById("lobby-overlay").style.display = "none";
+            estadoJogo = data.estado;
+            renderizarAmbosTabuleiros();
+            atualizarTela();
+            processarTurno();
+          } else if (data.tipo === "acao_executada") {
+            if (data.estado.movimento) {
+              const curId = estadoJogo.jogador_atual_id;
+              const j = estadoJogo.jogadores.find((p) => p.id === curId);
+              const total = j.na_pista_rapida ? 8 : 12;
+              somDado();
+              document.getElementById("log").innerHTML =
+                `🎲 ${j.nome} tirou <strong>${data.estado.movimento.dado}</strong>!`;
+              await animarPassos(curId, data.estado.movimento.dado, total);
+              if (data.estado.movimento.passou_payday) somPayday();
+            }
+            estadoJogo = data.estado;
+            atualizarTela();
+            processarTurno();
+          }
+        };
+      }
+
+      async function criarNovaSala() {
+        const nome =
+          document.getElementById("user-nome").value.trim() || "Jogador 1";
+        const prof = document.getElementById("user-prof").value;
+        const sonho = document.getElementById("user-sonho").value;
+
+        const res = await fetch("/criar_sala", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jogadores }),
+          body: JSON.stringify({
+            client_id: myClientId,
+            nome,
+            profissao: prof,
+            sonho,
+          }),
         });
-        estadoJogo = await res.json();
-        document.getElementById("setup-overlay").style.display = "none";
-        renderizarAmbosTabuleiros();
-        atualizarTela();
-
-        processarTurnoAtual();
-      }
-
-      function abrirSetup() {
-        document.getElementById("setup-overlay").style.display = "flex";
-      }
-
-      async function abrirRanking() {
-        const res = await fetch("/ranking");
         const data = await res.json();
-        const tbody = document.getElementById("ranking-tbody");
-        if (data.length === 0) {
-          tbody.innerHTML =
-            '<tr><td colspan="5" style="text-align:center; color:#64748b;">Nenhuma vitória salva ainda.</td></tr>';
-        } else {
-          tbody.innerHTML = data
-            .map(
-              (r) => `
-                    <tr>
-                        <td style="color:#facc15; font-weight:bold;">${r.vencedor}</td>
-                        <td>${r.profissao}</td>
-                        <td style="font-weight:bold; color:#38bdf8;">${r.turnos} turnos</td>
-                        <td style="color:#4ade80;">R$ ${Number(r.caixa).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
-                        <td style="color:#94a3b8; font-size:10px;">${r.data}</td>
-                    </tr>
-                `,
-            )
-            .join("");
-        }
-        document.getElementById("ranking-overlay").style.display = "flex";
+        currentSalaCodigo = data.codigo;
+
+        // Atualiza URL sem recarregar a página
+        window.history.pushState({}, "", `?sala=${currentSalaCodigo}`);
+
+        conectarWebSocket(currentSalaCodigo);
+        document.getElementById("entry-overlay").style.display = "none";
+        document.getElementById("lobby-overlay").style.display = "flex";
+        atualizarLobbyUI(data.sala);
       }
 
-      function fecharRanking() {
-        document.getElementById("ranking-overlay").style.display = "none";
+      async function entrarEmSala() {
+        const codigo = document
+          .getElementById("input-codigo-sala")
+          .value.trim()
+          .toUpperCase();
+        if (!codigo) {
+          alert("Digite o código da sala!");
+          return;
+        }
+
+        const nome =
+          document.getElementById("user-nome").value.trim() || "Convidado";
+        const prof = document.getElementById("user-prof").value;
+        const sonho = document.getElementById("user-sonho").value;
+
+        const res = await fetch("/entrar_sala", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            codigo,
+            client_id: myClientId,
+            nome,
+            profissao: prof,
+            sonho,
+          }),
+        });
+        const data = await res.json();
+        if (!data.sucesso) {
+          alert(data.mensagem);
+          return;
+        }
+
+        currentSalaCodigo = codigo;
+        window.history.pushState({}, "", `?sala=${currentSalaCodigo}`);
+
+        conectarWebSocket(currentSalaCodigo);
+        document.getElementById("entry-overlay").style.display = "none";
+        document.getElementById("lobby-overlay").style.display = "flex";
+        atualizarLobbyUI(data.sala);
+      }
+
+      function atualizarLobbyUI(sala) {
+        document.getElementById("lobby-codigo-titulo").innerText = sala.codigo;
+        document.getElementById("lobby-count").innerText =
+          sala.jogadores.length;
+
+        const isHost = sala.host_id === myClientId;
+        document.getElementById("host-controls").style.display = isHost
+          ? "block"
+          : "none";
+        document.getElementById("guest-waiting-msg").style.display = isHost
+          ? "none"
+          : "block";
+
+        const container = document.getElementById("lobby-players-container");
+        container.innerHTML = sala.jogadores
+          .map(
+            (j, idx) => `
+                <div class="lobby-player-item">
+                    <div>
+                        <strong>${j.is_bot ? "🤖" : "👤"} ${j.nome}</strong>
+                        <span style="color:#94a3b8; font-size:11px;">(${j.profissao})</span>
+                    </div>
+                    <span style="color:#facc15; font-size:11px;">${idx === 0 ? "👑 Criador" : "Pronto"}</span>
+                </div>
+            `,
+          )
+          .join("");
+      }
+
+      async function adicionarBotLobby() {
+        const randomProf =
+          dadosOpcoes.profissoes[
+            Math.floor(Math.random() * dadosOpcoes.profissoes.length)
+          ].nome;
+        const randomSonho =
+          dadosOpcoes.sonhos[
+            Math.floor(Math.random() * dadosOpcoes.sonhos.length)
+          ].titulo;
+
+        await fetch("/adicionar_bot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            codigo: currentSalaCodigo,
+            profissao: randomProf,
+            sonho: randomSonho,
+          }),
+        });
+      }
+
+      async function iniciarPartidaLobby() {
+        const res = await fetch("/iniciar_partida_sala", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo: currentSalaCodigo }),
+        });
+        const data = await res.json();
+        if (!data.sucesso) alert(data.mensagem);
+      }
+
+      function copiarLinkConvite() {
+        const link = `${window.location.origin}/?sala=${currentSalaCodigo}`;
+        navigator.clipboard.writeText(link).then(() => {
+          const fb = document.getElementById("copy-feedback");
+          if (fb) fb.innerText = "Link copiado para a área de transferência!";
+          else alert("Link da sala copiado!");
+        });
       }
 
       function atualizarTela() {
@@ -998,9 +1199,10 @@
         grid.innerHTML = estadoJogo.jogadores
           .map((j) => {
             const isActive = j.id === estadoJogo.jogador_atual_id;
+            const isMe = j.id === myClientId;
             return `
                     <div class="player-card ${isActive ? "active" : ""}" style="border-left: 4px solid ${j.cor};">
-                        <h3 style="color:${j.cor};">${j.icone} ${j.nome} ${j.is_bot ? "(IA)" : ""}</h3>
+                        <h3 style="color:${j.cor};">${j.icone} ${j.nome} ${isMe ? "(Você)" : ""}</h3>
                         <p><strong>Local:</strong> ${j.na_pista_rapida ? "🏎️ Pista Rápida" : "🐭 Ratos"}</p>
                         <p><strong>Caixa:</strong> R$ <span style="color:#4ade80;">${j.caixa.toFixed(2)}</span></p>
                         <p><strong>Renda Passiva:</strong> R$ <span style="color:#38bdf8;">${j.renda_passiva.toFixed(2)}</span></p>
@@ -1011,22 +1213,15 @@
           })
           .join("");
 
-        const cur = estadoJogo.jogadores.find(
-          (j) => j.id === estadoJogo.jogador_atual_id,
-        );
-        if (cur) {
-          document.getElementById("label-banco-jogador").innerText =
-            `Empréstimo (${cur.nome}):`;
+        const me = estadoJogo.jogadores.find((j) => j.id === myClientId);
+        if (me) {
           document.getElementById("cur-divida").innerText =
-            cur.emprestimos.toFixed(2);
+            me.emprestimos.toFixed(2);
           document.getElementById("cur-juros").innerText =
-            cur.juros_emprestimo.toFixed(2);
-          document.getElementById("label-ativos-jogador").innerText =
-            `Ativos (${cur.nome}):`;
-
+            me.juros_emprestimo.toFixed(2);
           const lista = document.getElementById("assets-list");
-          if (cur.ativos && cur.ativos.length > 0) {
-            lista.innerHTML = cur.ativos
+          if (me.ativos && me.ativos.length > 0) {
+            lista.innerHTML = me.ativos
               .map((a) => {
                 if (a.tipo === "acao")
                   return `<div class="asset-item"><span>📈 ${a.quantidade}x ${a.nome}</span><span style="color:#38bdf8;">(Custo: R$ ${a.preco_unitario.toFixed(2)})</span></div>`;
@@ -1038,7 +1233,7 @@
               '<span style="color: #64748b; font-size: 11px;">Nenhum ativo adquirido ainda.</span>';
           }
 
-          if (cur.saiu_da_corrida && !cur.na_pista_rapida && !cur.is_bot) {
+          if (me.saiu_da_corrida && !me.na_pista_rapida) {
             document.getElementById("btn-avancar").style.display = "block";
           } else {
             document.getElementById("btn-avancar").style.display = "none";
@@ -1054,247 +1249,184 @@
           j.posicao = (j.posicao + 1) % totalCasas;
           desenharPeoes();
           somPasso();
-          await sleep(800);
+          await sleep(700);
         }
       }
 
-      async function processarTurnoAtual() {
+      async function processarTurno() {
         const cur = estadoJogo.jogadores.find(
           (j) => j.id === estadoJogo.jogador_atual_id,
         );
-        const btn = document.getElementById("btn-dado");
+        const isMyTurn = cur.id === myClientId;
+        const btnDado = document.getElementById("btn-dado");
+        const modal = document.getElementById("card-modal");
 
+        // Se for bot, o host da sala envia a ordem de jogada
         if (cur.is_bot) {
-          btn.disabled = true;
+          btnDado.disabled = true;
+          btnDado.innerText = `🤖 Vez de ${cur.nome}...`;
+          modal.style.display = "none";
           document.getElementById("log").innerHTML =
             `🤖 Vez de <strong>${cur.nome}</strong> (IA)...`;
-          await sleep(1000);
-          fazerJogadaBot();
-        } else {
-          btn.disabled = false;
-          btn.innerText = `🎲 Vez de ${cur.nome}: Rolar Dado`;
-          document.getElementById("log").innerHTML =
-            `É a vez de <strong>${cur.nome}</strong>! Role o dado.`;
+
+          const myIsHost = estadoJogo.jogadores[0].id === myClientId;
+          if (myIsHost) {
+            await sleep(1200);
+            ws.send(JSON.stringify({ acao: "jogar_bot" }));
+          }
+          return;
         }
-      }
 
-      async function fazerJogadaHumano() {
-        const btn = document.getElementById("btn-dado");
-        btn.disabled = true;
-        somDado();
+        // Se for humano
+        if (isMyTurn) {
+          btnDado.disabled = false;
+          btnDado.innerText = `🎲 Sua Vez: Rolar Dado`;
+          document.getElementById("log").innerHTML =
+            `🌟 <strong>É a sua vez!</strong> Role o dado para andar.`;
+        } else {
+          btnDado.disabled = true;
+          btnDado.innerText = `⏳ Aguardando ${cur.nome}...`;
+          document.getElementById("log").innerHTML =
+            `Aguardando <strong>${cur.nome}</strong> jogar...`;
+        }
 
-        const curId = estadoJogo.jogador_atual_id;
-        const res = await fetch("/jogar_humano", { method: "POST" });
-        estadoJogo = await res.json();
-
-        const cur = estadoJogo.jogadores.find((j) => j.id === curId);
-        const total = cur.na_pista_rapida ? 8 : 12;
-
-        document.getElementById("log").innerHTML =
-          `🎲 ${cur.nome} tirou <strong>${estadoJogo.movimento.dado}</strong>!`;
-        await animarPassos(curId, estadoJogo.movimento.dado, total);
-        atualizarTela();
-
-        if (estadoJogo.movimento.passou_payday) somPayday();
-
-        const modal = document.getElementById("card-modal");
+        // Exibição de cards
+        const ev = estadoJogo.evento_atual;
         const actInvestir = document.getElementById("actions-investir");
         const actMercado = document.getElementById("actions-mercado");
         const actBesteira = document.getElementById("actions-besteira");
         const boxQtdAcoes = document.getElementById("box-qtd-acoes");
 
-        if (
-          estadoJogo.evento &&
-          (estadoJogo.evento.tipo === "oportunidade" ||
-            estadoJogo.evento.tipo === "pista_negocio" ||
-            estadoJogo.evento.tipo === "sonho")
-        ) {
-          modal.className = "";
-          document.getElementById("card-titulo").innerText =
-            estadoJogo.evento.titulo;
-          document.getElementById("card-desc").innerText =
-            estadoJogo.evento.descricao || "Negócio da Pista Rápida.";
+        if (ev && isMyTurn) {
+          if (
+            ev.tipo === "oportunidade" ||
+            ev.tipo === "pista_negocio" ||
+            ev.tipo === "sonho"
+          ) {
+            modal.className = "";
+            document.getElementById("card-titulo").innerText = ev.titulo;
+            document.getElementById("card-desc").innerText =
+              ev.descricao || "Negócio da Pista Rápida.";
 
-          if (estadoJogo.evento.subtipo === "acao") {
-            precoAcaoAtiva = estadoJogo.evento.preco_unitario;
-            document.getElementById("card-custo-container").innerHTML =
-              `<strong>Preço por Ação:</strong> R$ <span style="color:#f87171;">${estadoJogo.evento.preco_unitario.toFixed(2)}</span>`;
-            document.getElementById("card-renda-box").style.display =
-              estadoJogo.evento.renda > 0 ? "block" : "none";
-            if (estadoJogo.evento.renda > 0)
-              document.getElementById("card-renda").innerText = Number(
-                estadoJogo.evento.renda,
-              ).toFixed(2);
-            boxQtdAcoes.style.display = "block";
-            atualizarCalculoAcoes();
-          } else {
-            boxQtdAcoes.style.display = "none";
-            document.getElementById("card-custo-container").innerHTML =
-              `<strong>Custo / Entrada:</strong> R$ <span id="card-custo" style="color:#f87171;">${Number(estadoJogo.evento.entrada || estadoJogo.evento.custo).toFixed(2)}</span>`;
-            if (estadoJogo.evento.renda) {
-              document.getElementById("card-renda-box").style.display = "block";
-              document.getElementById("card-renda").innerText = Number(
-                estadoJogo.evento.renda,
-              ).toFixed(2);
+            if (ev.subtipo === "acao") {
+              precoAcaoAtiva = ev.preco_unitario;
+              document.getElementById("card-custo-container").innerHTML =
+                `<strong>Preço por Ação:</strong> R$ <span style="color:#f87171;">${ev.preco_unitario.toFixed(2)}</span>`;
+              document.getElementById("card-renda-box").style.display =
+                ev.renda > 0 ? "block" : "none";
+              if (ev.renda > 0)
+                document.getElementById("card-renda").innerText = Number(
+                  ev.renda,
+                ).toFixed(2);
+              boxQtdAcoes.style.display = "block";
+              atualizarCalculoAcoes();
             } else {
-              document.getElementById("card-renda-box").style.display = "none";
+              boxQtdAcoes.style.display = "none";
+              document.getElementById("card-custo-container").innerHTML =
+                `<strong>Custo / Entrada:</strong> R$ <span id="card-custo" style="color:#f87171;">${Number(ev.entrada || ev.custo).toFixed(2)}</span>`;
+              if (ev.renda) {
+                document.getElementById("card-renda-box").style.display =
+                  "block";
+                document.getElementById("card-renda").innerText = Number(
+                  ev.renda,
+                ).toFixed(2);
+              } else {
+                document.getElementById("card-renda-box").style.display =
+                  "none";
+              }
             }
-          }
-
-          actInvestir.style.display = "flex";
-          actMercado.style.display = "none";
-          actBesteira.style.display = "none";
-          modal.style.display = "block";
-        } else if (estadoJogo.evento && estadoJogo.evento.tipo === "mercado") {
-          boxQtdAcoes.style.display = "none";
-          if (estadoJogo.evento.possui_ativo) {
+            actInvestir.style.display = "flex";
+            actMercado.style.display = "none";
+            actBesteira.style.display = "none";
+            modal.style.display = "block";
+            btnDado.disabled = true;
+          } else if (ev.tipo === "mercado" && ev.possui_ativo) {
             somPayday();
+            boxQtdAcoes.style.display = "none";
             modal.className = "modal-mercado";
             document.getElementById("card-titulo").innerText =
-              `🏪 Oferta: ${estadoJogo.evento.titulo}`;
-            document.getElementById("card-desc").innerText =
-              estadoJogo.evento.descricao;
+              `🏪 Oferta: ${ev.titulo}`;
+            document.getElementById("card-desc").innerText = ev.descricao;
             document.getElementById("card-custo-container").innerHTML =
-              `<strong>Oferta de Compra:</strong> R$ <span style="color:#4ade80;">${estadoJogo.evento.preco_oferta.toFixed(2)}</span>`;
+              `<strong>Oferta de Compra:</strong> R$ <span style="color:#4ade80;">${ev.preco_oferta.toFixed(2)}</span>`;
             document.getElementById("card-renda-box").style.display = "none";
 
             actInvestir.style.display = "none";
             actMercado.style.display = "flex";
             actBesteira.style.display = "none";
             modal.style.display = "block";
-          } else {
-            modal.style.display = "none";
-            document.getElementById("log").innerHTML =
-              `🏪 Mercado: <em>${estadoJogo.evento.descricao}</em>`;
-            processarTurnoAtual();
-          }
-        } else if (estadoJogo.evento && estadoJogo.evento.tipo === "besteira") {
-          somBesteira();
-          boxQtdAcoes.style.display = "none";
-          modal.className = "modal-besteira";
-          document.getElementById("card-titulo").innerText =
-            `💸 Besteira: ${estadoJogo.evento.titulo}`;
-          document.getElementById("card-desc").innerText =
-            "Despesa imprevista obrigatória!";
-          document.getElementById("card-custo-container").innerHTML =
-            `<strong>Valor a Pagar:</strong> R$ <span style="color:#f87171;">${Number(estadoJogo.evento.valor).toFixed(2)}</span>`;
-          document.getElementById("card-renda-box").style.display = "none";
+            btnDado.disabled = true;
+          } else if (ev.tipo === "besteira") {
+            somBesteira();
+            boxQtdAcoes.style.display = "none";
+            modal.className = "modal-besteira";
+            document.getElementById("card-titulo").innerText =
+              `💸 Besteira: ${ev.titulo}`;
+            document.getElementById("card-desc").innerText =
+              "Despesa imprevista obrigatória!";
+            document.getElementById("card-custo-container").innerHTML =
+              `<strong>Valor a Pagar:</strong> R$ <span style="color:#f87171;">${Number(ev.valor).toFixed(2)}</span>`;
+            document.getElementById("card-renda-box").style.display = "none";
 
-          actInvestir.style.display = "none";
-          actMercado.style.display = "none";
-          actBesteira.style.display = "block";
-          modal.style.display = "block";
+            actInvestir.style.display = "none";
+            actMercado.style.display = "none";
+            actBesteira.style.display = "block";
+            modal.style.display = "block";
+            btnDado.disabled = true;
+          }
         } else {
           modal.style.display = "none";
-          processarTurnoAtual();
         }
 
         if (cur.venceu_jogo) {
           somVitoria();
           document.getElementById("log").innerHTML =
-            `👑 <strong>${cur.nome} CONQUISTOU SEU SONHO E VENCEU O JOGO!</strong>`;
-          btn.disabled = true;
+            `👑 <strong>${cur.nome} COMPROU SEU SONHO E VENCEU A PARTIDA!</strong>`;
+          btnDado.disabled = true;
         }
       }
 
-      async function fazerJogadaBot() {
-        somDado();
-        const botId = estadoJogo.jogador_atual_id;
-        const res = await fetch("/jogar_bot", { method: "POST" });
-        estadoJogo = await res.json();
-
-        const bot = estadoJogo.jogadores.find((j) => j.id === botId);
-        const total = bot.na_pista_rapida ? 8 : 12;
-
-        await animarPassos(botId, estadoJogo.movimento.dado, total);
-        atualizarTela();
-
-        document.getElementById("log").innerHTML = estadoJogo.log_bot;
-
-        if (bot.venceu_jogo) {
-          document.getElementById("log").innerHTML +=
-            `<br>💥 <strong>${bot.nome} comprou seu sonho e venceu!</strong>`;
-          return;
-        }
-
-        processarTurnoAtual();
+      function fazerJogadaHumano() {
+        if (ws) ws.send(JSON.stringify({ acao: "jogar_humano" }));
       }
 
-      async function comprarAtivo() {
+      function comprarAtivo() {
         const qtd =
           Number(document.getElementById("input-qtd-acoes").value) || 1;
-        const res = await fetch("/comprar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ quantidade: qtd }),
-        });
-        estadoJogo = await res.json();
-        if (!estadoJogo.sucesso) {
-          alert(estadoJogo.mensagem);
-          return;
-        }
+        if (ws) ws.send(JSON.stringify({ acao: "comprar", quantidade: qtd }));
         somCompra();
         document.getElementById("card-modal").style.display = "none";
-        atualizarTela();
-        document.getElementById("log").innerHTML = `✅ ${estadoJogo.mensagem}`;
-        processarTurnoAtual();
       }
 
-      async function venderAtivoMercado() {
-        const res = await fetch("/vender_mercado", { method: "POST" });
-        estadoJogo = await res.json();
+      function venderAtivoMercado() {
+        if (ws) ws.send(JSON.stringify({ acao: "vender_mercado" }));
         somPayday();
         document.getElementById("card-modal").style.display = "none";
-        atualizarTela();
-        document.getElementById("log").innerHTML = `💰 ${estadoJogo.mensagem}`;
-        processarTurnoAtual();
       }
 
-      async function pagarBesteira() {
-        const res = await fetch("/pagar_besteira", { method: "POST" });
-        estadoJogo = await res.json();
+      function pagarBesteira() {
+        if (ws) ws.send(JSON.stringify({ acao: "pagar_besteira" }));
         document.getElementById("card-modal").style.display = "none";
-        atualizarTela();
-        document.getElementById("log").innerHTML =
-          `<span style="color: #f87171;">${estadoJogo.mensagem}</span>`;
-        processarTurnoAtual();
       }
 
-      async function passarVez() {
-        const res = await fetch("/passar", { method: "POST" });
-        estadoJogo = await res.json();
+      function passarVez() {
+        if (ws) ws.send(JSON.stringify({ acao: "passar" }));
         document.getElementById("card-modal").style.display = "none";
-        atualizarTela();
-        document.getElementById("log").innerText = "Vez passada.";
-        processarTurnoAtual();
       }
 
-      async function entrarPistaRapida() {
-        const res = await fetch("/entrar_pista_rapida", { method: "POST" });
-        estadoJogo = await res.json();
-        atualizarTela();
+      function entrarPistaRapida() {
+        if (ws) ws.send(JSON.stringify({ acao: "entrar_pista_rapida" }));
         somVitoria();
-        document.getElementById("log").innerHTML =
-          "🌟 <strong>Entrou na Pista Rápida!</strong>";
       }
 
-      async function pegarEmprestimo() {
-        const res = await fetch("/emprestimo", { method: "POST" });
-        estadoJogo = await res.json();
-        if (estadoJogo.sucesso) {
-          somPayday();
-          atualizarTela();
-        }
+      function pegarEmprestimo() {
+        if (ws) ws.send(JSON.stringify({ acao: "emprestimo" }));
+        somPayday();
       }
 
-      async function quitarEmprestimo() {
-        const res = await fetch("/quitar_emprestimo", { method: "POST" });
-        estadoJogo = await res.json();
-        if (!estadoJogo.sucesso) alert(estadoJogo.mensagem);
-        else {
-          somCompra();
-          atualizarTela();
-        }
+      function quitarEmprestimo() {
+        if (ws) ws.send(JSON.stringify({ acao: "quitar_emprestimo" }));
+        somCompra();
       }
 
       function atualizarCalculoAcoes() {
@@ -1305,7 +1437,7 @@
           total.toFixed(2);
       }
 
-      carregarOpcoesSetup();
+      carregarOpcoes();
     </script>
   </body>
 </html>

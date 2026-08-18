@@ -1,24 +1,57 @@
-from fastapi import FastAPI
+import uuid
+import json
+import asyncio
+from typing import Dict, List, Optional
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-from typing import List
 from regras import Jogo
 from database import obter_ranking
 
 app = FastAPI()
-jogo = Jogo()
 
-class JogadorConfig(BaseModel):
+class Sala:
+    def __init__(self, codigo: str, host_id: str):
+        self.codigo = codigo
+        self.host_id = host_id
+        self.status = "lobby"  # 'lobby' ou 'jogando'
+        self.jogadores_lobby: List[dict] = []
+        self.jogo: Optional[Jogo] = None
+        self.conexoes: List[WebSocket] = []
+
+    async def broadcast(self, data: dict):
+        desconectar = []
+        for ws in self.conexoes:
+            try:
+                await ws.send_text(json.dumps(data))
+            except Exception:
+                desconectar.append(ws)
+        for ws in desconectar:
+            if ws in self.conexoes:
+                self.conexoes.remove(ws)
+
+salas: Dict[str, Sala] = {}
+
+class CriarSalaRequest(BaseModel):
+    client_id: str
     nome: str
     profissao: str
     sonho: str
-    is_bot: bool
 
-class MultiSetupData(BaseModel):
-    jogadores: List[JogadorConfig]
+class EntrarSalaRequest(BaseModel):
+    codigo: str
+    client_id: str
+    nome: str
+    profissao: str
+    sonho: str
 
-class CompraData(BaseModel):
-    quantidade: int = 1
+class AdicionarBotRequest(BaseModel):
+    codigo: str
+    profissao: str
+    sonho: str
+
+class IniciarPartidaRequest(BaseModel):
+    codigo: str
 
 @app.get("/", response_class=HTMLResponse)
 def index():
@@ -36,44 +69,172 @@ def get_opcoes():
 def get_ranking():
     return obter_ranking()
 
-@app.post("/iniciar_multi")
-def iniciar_multi(data: MultiSetupData):
-    configs = [j.model_dump() for j in data.jogadores]
-    jogo.iniciar_partida(configs)
-    return jogo.obter_estado_geral()
+@app.post("/criar_sala")
+async def criar_sala(data: CriarSalaRequest):
+    codigo = uuid.uuid4().hex[:6].upper()
+    nova_sala = Sala(codigo=codigo, host_id=data.client_id)
+    nova_sala.jogadores_lobby.append({
+        "id": data.client_id,
+        "nome": data.nome,
+        "profissao": data.profissao,
+        "sonho": data.sonho,
+        "is_bot": False
+    })
+    salas[codigo] = nova_sala
+    return {"codigo": codigo, "sala": serializar_sala(nova_sala)}
 
-@app.post("/jogar_humano")
-def jogar_humano():
-    return jogo.jogar_turno_humano()
+@app.post("/entrar_sala")
+async def entrar_sala(data: EntrarSalaRequest):
+    codigo = data.codigo.strip().upper()
+    if codigo not in salas:
+        return {"sucesso": False, "mensagem": "Sala não encontrada."}
+    sala = salas[codigo]
+    if sala.status != "lobby":
+        return {"sucesso": False, "mensagem": "A partida já começou nesta sala."}
+    if len(sala.jogadores_lobby) >= 4:
+        return {"sucesso": False, "mensagem": "A sala já está cheia (máx 4 jogadores)."}
+    
+    # Atualiza ou adiciona jogador
+    existente = next((j for j in sala.jogadores_lobby if j["id"] == data.client_id), None)
+    if not existente:
+        sala.jogadores_lobby.append({
+            "id": data.client_id,
+            "nome": data.nome,
+            "profissao": data.profissao,
+            "sonho": data.sonho,
+            "is_bot": False
+        })
+    else:
+        existente["nome"] = data.nome
+        existente["profissao"] = data.profissao
+        existente["sonho"] = data.sonho
 
-@app.post("/jogar_bot")
-def jogar_bot():
-    return jogo.executar_turno_bot()
+    await sala.broadcast({"tipo": "lobby_atualizado", "sala": serializar_sala(sala)})
+    return {"sucesso": True, "codigo": codigo, "sala": serializar_sala(sala)}
 
-@app.post("/comprar")
-def comprar(data: CompraData = CompraData()):
-    return jogo.comprar_atual(quantidade=data.quantidade)
+@app.post("/adicionar_bot")
+async def adicionar_bot(data: AdicionarBotRequest):
+    codigo = data.codigo.strip().upper()
+    if codigo not in salas:
+        return {"sucesso": False, "mensagem": "Sala inexistente."}
+    sala = salas[codigo]
+    if len(sala.jogadores_lobby) >= 4:
+        return {"sucesso": False, "mensagem": "Sala cheia."}
+    
+    bot_id = f"bot_{uuid.uuid4().hex[:4]}"
+    num_bots = len([j for j in sala.jogadores_lobby if j["is_bot"]]) + 1
+    sala.jogadores_lobby.append({
+        "id": bot_id,
+        "nome": f"IA Rival {num_bots}",
+        "profissao": data.profissao,
+        "sonho": data.sonho,
+        "is_bot": True
+    })
+    await sala.broadcast({"tipo": "lobby_atualizado", "sala": serializar_sala(sala)})
+    return {"sucesso": True, "sala": serializar_sala(sala)}
 
-@app.post("/pagar_besteira")
-def pagar_besteira():
-    return jogo.pagar_besteira_atual()
+@app.post("/iniciar_partida_sala")
+async def iniciar_partida(data: IniciarPartidaRequest):
+    codigo = data.codigo.strip().upper()
+    if codigo not in salas:
+        return {"sucesso": False, "mensagem": "Sala inexistente."}
+    sala = salas[codigo]
+    if len(sala.jogadores_lobby) < 2:
+        return {"sucesso": False, "mensagem": "É necessário no mínimo 2 participantes (humanos ou robôs)."}
+    
+    sala.jogo = Jogo(sala.jogadores_lobby)
+    sala.status = "jogando"
+    
+    payload = {
+        "tipo": "jogo_iniciado",
+        "sala": serializar_sala(sala),
+        "estado": sala.jogo.obter_estado_geral()
+    }
+    await sala.broadcast(payload)
+    return {"sucesso": True}
 
-@app.post("/vender_mercado")
-def vender_mercado():
-    return jogo.vender_ativo_mercado_atual()
+def serializar_sala(sala: Sala) -> dict:
+    return {
+        "codigo": sala.codigo,
+        "host_id": sala.host_id,
+        "status": sala.status,
+        "jogadores": sala.jogadores_lobby
+    }
 
-@app.post("/passar")
-def passar():
-    return jogo.passar_atual()
+@app.websocket("/ws/{codigo_sala}/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, codigo_sala: str, client_id: str):
+    await websocket.accept()
+    codigo = codigo_sala.strip().upper()
+    if codigo not in salas:
+        await websocket.close()
+        return
 
-@app.post("/entrar_pista_rapida")
-def entrar_pista():
-    return jogo.entrar_pista_rapida_atual()
+    sala = salas[codigo]
+    sala.conexoes.append(websocket)
 
-@app.post("/emprestimo")
-def pegar_emprestimo():
-    return jogo.emprestimo_atual()
+    # Envia estado inicial da sala ao conectar
+    if sala.status == "lobby":
+        await websocket.send_text(json.dumps({"tipo": "lobby_atualizado", "sala": serializar_sala(sala)}))
+    elif sala.jogo:
+        await websocket.send_text(json.dumps({
+            "tipo": "sync_jogo",
+            "sala": serializar_sala(sala),
+            "estado": sala.jogo.obter_estado_geral()
+        }))
 
-@app.post("/quitar_emprestimo")
-def quitar_emprestimo():
-    return jogo.quitar_emprestimo_atual()
+    try:
+        while True:
+            raw_data = await websocket.receive_text()
+            msg = json.loads(raw_data)
+            acao = msg.get("acao")
+            jogo = sala.jogo
+
+            if not jogo:
+                continue
+
+            if acao == "jogar_humano":
+                if jogo.jogador_atual.id == client_id:
+                    resultado = jogo.processar_jogada_humano()
+                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+
+            elif acao == "jogar_bot":
+                if jogo.jogador_atual.is_bot:
+                    resultado = jogo.processar_jogada_bot()
+                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+
+            elif acao == "comprar":
+                if jogo.jogador_atual.id == client_id:
+                    qtd = msg.get("quantidade", 1)
+                    resultado = jogo.comprar_atual(quantidade=qtd)
+                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+
+            elif acao == "passar":
+                if jogo.jogador_atual.id == client_id:
+                    resultado = jogo.passar_atual()
+                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+
+            elif acao == "pagar_besteira":
+                if jogo.jogador_atual.id == client_id:
+                    resultado = jogo.pagar_besteira_atual()
+                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+
+            elif acao == "vender_mercado":
+                if jogo.jogador_atual.id == client_id:
+                    resultado = jogo.vender_ativo_mercado_atual()
+                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+
+            elif acao == "entrar_pista_rapida":
+                resultado = jogo.entrar_pista_rapida_atual(client_id)
+                await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+
+            elif acao == "emprestimo":
+                resultado = jogo.emprestimo_jogador(client_id)
+                await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+
+            elif acao == "quitar_emprestimo":
+                resultado = jogo.quitar_emprestimo_jogador(client_id)
+                await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+
+    except WebSocketDisconnect:
+        if websocket in sala.conexoes:
+            sala.conexoes.remove(websocket)

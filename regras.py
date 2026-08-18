@@ -44,7 +44,7 @@ class Ativo:
 
 @dataclass
 class Jogador:
-    id: int
+    id: str
     nome: str
     profissao: str
     salario: float
@@ -141,7 +141,7 @@ class Jogo:
         {"cor": "#c084fc", "icone": "🦊"}
     ]
 
-    def __init__(self):
+    def __init__(self, configs_jogadores: List[dict]):
         self.tabuleiro_ratos = [
             {"id": 0, "tipo": "Payday"}, {"id": 1, "tipo": "Oportunidade"},
             {"id": 2, "tipo": "Besteira"}, {"id": 3, "tipo": "Oportunidade"},
@@ -188,26 +188,13 @@ class Jogo:
         ]
 
         self.jogadores: List[Jogador] = []
-        self.indice_atual: int = 0
-        self.carta_ativa = None
-        self.partida_iniciada: bool = False
-        self.total_turnos: int = 0
-
-    @property
-    def jogador_atual(self) -> Optional[Jogador]:
-        if not self.jogadores:
-            return None
-        return self.jogadores[self.indice_atual]
-
-    def iniciar_partida(self, configs_jogadores: List[dict]):
-        self.jogadores = []
         for i, cfg in enumerate(configs_jogadores):
             prof = next((p for p in self.PROFISSOES if p["nome"] == cfg["profissao"]), self.PROFISSOES[0])
             sonho = next((s for s in self.SONHOS if s["titulo"] == cfg["sonho"]), self.SONHOS[0])
             visual = self.CORES_ICONES[i % len(self.CORES_ICONES)]
             
             self.jogadores.append(Jogador(
-                id=i,
+                id=str(cfg.get("id", i)),
                 nome=cfg.get("nome", f"Jogador {i+1}"),
                 profissao=prof["nome"],
                 salario=prof["salario"],
@@ -220,22 +207,27 @@ class Jogo:
                 icone=visual["icone"]
             ))
 
-        self.indice_atual = 0
-        self.partida_iniciada = True
+        self.indice_atual: int = 0
         self.carta_ativa = None
-        self.total_turnos = 0
+        self.total_turnos: int = 0
+        self.evento_atual: Optional[dict] = None
+
+    @property
+    def jogador_atual(self) -> Jogador:
+        return self.jogadores[self.indice_atual]
 
     def avancar_turno(self):
         self.carta_ativa = None
+        self.evento_atual = None
         self.indice_atual = (self.indice_atual + 1) % len(self.jogadores)
 
     def obter_estado_geral(self) -> dict:
         return {
-            "partida_iniciada": self.partida_iniciada,
             "indice_atual": self.indice_atual,
             "total_turnos": self.total_turnos,
-            "jogador_atual_id": self.jogador_atual.id if self.jogador_atual else None,
-            "is_bot_atual": self.jogador_atual.is_bot if self.jogador_atual else False,
+            "jogador_atual_id": self.jogador_atual.id,
+            "is_bot_atual": self.jogador_atual.is_bot,
+            "evento_atual": self.evento_atual,
             "jogadores": [j.serializar() for j in self.jogadores]
         }
 
@@ -253,7 +245,7 @@ class Jogo:
         casa_atual = tabuleiro[nova_pos]["tipo"]
         return {"dado": dado, "nova_pos": nova_pos, "casa_atual": casa_atual, "passou_payday": passou_payday}
 
-    def jogar_turno_humano(self) -> dict:
+    def processar_jogada_humano(self) -> dict:
         j = self.jogador_atual
         self.total_turnos += 1
         mov = self.mover_jogador(j)
@@ -294,11 +286,12 @@ class Jogo:
             else:
                 self.avancar_turno()
 
+        self.evento_atual = evento
         estado = self.obter_estado_geral()
         estado.update({"movimento": mov, "evento": evento})
         return estado
 
-    def executar_turno_bot(self) -> dict:
+    def processar_jogada_bot(self) -> dict:
         b = self.jogador_atual
         self.total_turnos += 1
 
@@ -457,24 +450,28 @@ class Jogo:
         self.avancar_turno()
         return self.obter_estado_geral()
 
-    def entrar_pista_rapida_atual(self) -> dict:
-        j = self.jogador_atual
-        j.na_pista_rapida = True
-        j.posicao = 0
-        j.renda_pista_rapida = j.renda_passiva * 10
-        j.caixa += j.renda_pista_rapida
+    def entrar_pista_rapida_atual(self, jogador_id: str) -> dict:
+        j = next((p for p in self.jogadores if p.id == jogador_id), None)
+        if j:
+            j.na_pista_rapida = True
+            j.posicao = 0
+            j.renda_pista_rapida = j.renda_passiva * 10
+            j.caixa += j.renda_pista_rapida
         return self.obter_estado_geral()
 
-    def emprestimo_atual(self) -> dict:
-        j = self.jogador_atual
-        j.caixa += 1000.0
-        j.emprestimos += 1000.0
+    def emprestimo_jogador(self, jogador_id: str) -> dict:
+        j = next((p for p in self.jogadores if p.id == jogador_id), None)
+        if j:
+            j.caixa += 1000.0
+            j.emprestimos += 1000.0
         estado = self.obter_estado_geral()
         estado.update({"sucesso": True, "mensagem": "Empréstimo de R$ 1.000 concedido."})
         return estado
 
-    def quitar_emprestimo_atual(self) -> dict:
-        j = self.jogador_atual
+    def quitar_emprestimo_jogador(self, jogador_id: str) -> dict:
+        j = next((p for p in self.jogadores if p.id == jogador_id), None)
+        if not j:
+            return {"sucesso": False, "mensagem": "Jogador não encontrado."}
         if j.emprestimos < 1000.0:
             return {"sucesso": False, "mensagem": "Sem dívidas para quitar."}
         if j.caixa < 1000.0:
