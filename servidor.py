@@ -17,18 +17,18 @@ class Sala:
         self.status = "lobby"  # 'lobby' ou 'jogando'
         self.jogadores_lobby: List[dict] = []
         self.jogo: Optional[Jogo] = None
-        self.conexoes: List[WebSocket] = []
+        self.conexoes: Dict[str, WebSocket] = {}
 
     async def broadcast(self, data: dict):
         desconectar = []
-        for ws in self.conexoes:
+        for cid, ws in list(self.conexoes.items()):
             try:
                 await ws.send_text(json.dumps(data))
             except Exception:
-                desconectar.append(ws)
-        for ws in desconectar:
-            if ws in self.conexoes:
-                self.conexoes.remove(ws)
+                desconectar.append(cid)
+        for cid in desconectar:
+            if cid in self.conexoes:
+                del self.conexoes[cid]
 
 salas: Dict[str, Sala] = {}
 
@@ -89,12 +89,17 @@ async def entrar_sala(data: EntrarSalaRequest):
     if codigo not in salas:
         return {"sucesso": False, "mensagem": "Sala não encontrada."}
     sala = salas[codigo]
+    
+    # Se já estiver jogando, verifica se é um jogador voltando (reconexão)
     if sala.status != "lobby":
-        return {"sucesso": False, "mensagem": "A partida já começou nesta sala."}
+        existente = next((j for j in sala.jogadores_lobby if j["id"] == data.client_id), None)
+        if existente:
+            return {"sucesso": True, "codigo": codigo, "sala": serializar_sala(sala)}
+        return {"sucesso": False, "mensagem": "Partida em andamento. Não é possível novos participantes."}
+
     if len(sala.jogadores_lobby) >= 4:
         return {"sucesso": False, "mensagem": "A sala já está cheia (máx 4 jogadores)."}
     
-    # Atualiza ou adiciona jogador
     existente = next((j for j in sala.jogadores_lobby if j["id"] == data.client_id), None)
     if not existente:
         sala.jogadores_lobby.append({
@@ -140,7 +145,7 @@ async def iniciar_partida(data: IniciarPartidaRequest):
         return {"sucesso": False, "mensagem": "Sala inexistente."}
     sala = salas[codigo]
     if len(sala.jogadores_lobby) < 2:
-        return {"sucesso": False, "mensagem": "É necessário no mínimo 2 participantes (humanos ou robôs)."}
+        return {"sucesso": False, "mensagem": "É necessário no mínimo 2 participantes."}
     
     sala.jogo = Jogo(sala.jogadores_lobby)
     sala.status = "jogando"
@@ -170,9 +175,9 @@ async def websocket_endpoint(websocket: WebSocket, codigo_sala: str, client_id: 
         return
 
     sala = salas[codigo]
-    sala.conexoes.append(websocket)
+    sala.conexoes[client_id] = websocket
 
-    # Envia estado inicial da sala ao conectar
+    # Reconexão ou Entrada: Sincroniza estado com o usuário
     if sala.status == "lobby":
         await websocket.send_text(json.dumps({"tipo": "lobby_atualizado", "sala": serializar_sala(sala)}))
     elif sala.jogo:
@@ -187,8 +192,31 @@ async def websocket_endpoint(websocket: WebSocket, codigo_sala: str, client_id: 
             raw_data = await websocket.receive_text()
             msg = json.loads(raw_data)
             acao = msg.get("acao")
-            jogo = sala.jogo
 
+            # Chat e Reações em Tempo Real
+            if acao == "chat_mensagem":
+                texto = msg.get("texto", "").strip()
+                nome = msg.get("nome", "Anônimo")
+                if texto:
+                    await sala.broadcast({
+                        "tipo": "novo_chat",
+                        "remetente": nome,
+                        "texto": texto,
+                        "client_id": client_id
+                    })
+                continue
+
+            elif acao == "reacao_emoji":
+                emoji = msg.get("emoji", "🚀")
+                nome = msg.get("nome", "Alguém")
+                await sala.broadcast({
+                    "tipo": "nova_reacao",
+                    "emoji": emoji,
+                    "remetente": nome
+                })
+                continue
+
+            jogo = sala.jogo
             if not jogo:
                 continue
 
@@ -236,5 +264,5 @@ async def websocket_endpoint(websocket: WebSocket, codigo_sala: str, client_id: 
                 await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
 
     except WebSocketDisconnect:
-        if websocket in sala.conexoes:
-            sala.conexoes.remove(websocket)
+        if client_id in sala.conexoes:
+            del sala.conexoes[client_id]

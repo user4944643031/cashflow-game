@@ -10,28 +10,30 @@ class CartaOportunidade:
     custo_total: float
     entrada: float
     renda_mensal: float
-    tipo: str = "imovel"
+    tipo: str = "imovel"  # 'imovel', 'acao', 'negocio', 'cripto'
     preco_unitario: float = 0.0
 
 @dataclass
 class CartaBesteira:
     titulo: str
     valor: float
+    descricao: str = ""
 
 @dataclass
 class CartaMercado:
     titulo: str
     descricao: str
-    tipo_alvo: str
+    tipo_alvo: str  # 'imovel', 'acao', 'cripto', 'todos'
     alvo_nome: str
     preco_oferta: float
+    fator_multiplicador: float = 1.0
 
 @dataclass
 class CartaPistaRapida:
     titulo: str
     custo: float
     renda_mensal: float
-    tipo: str
+    tipo: str  # 'negocio', 'sonho'
 
 @dataclass
 class Ativo:
@@ -64,7 +66,7 @@ class Jogador:
 
     @property
     def renda_passiva(self) -> float:
-        return sum(ativo.renda_mensal * (ativo.quantidade if ativo.tipo == 'acao' else 1) for ativo in self.ativos)
+        return sum(ativo.renda_mensal * (ativo.quantidade if ativo.tipo in ['acao', 'cripto'] else 1) for ativo in self.ativos)
 
     @property
     def juros_emprestimo(self) -> float:
@@ -158,33 +160,49 @@ class Jogo:
             {"id": 6, "tipo": "Sonho"}, {"id": 7, "tipo": "Negócio Rápido"}
         ]
 
+        # Baralho Expandido de Oportunidades
         self.baralho_oportunidades = [
             CartaOportunidade("Casa 2 Quartos", "Imóvel financiado com aluguel mensal fixo.", 60000, 1000, 300, tipo="imovel"),
             CartaOportunidade("Apartamento Studio", "Ótima localização para locação por temporada.", 90000, 1500, 450, tipo="imovel"),
-            CartaOportunidade("Lavanderia Self-Service", "Negócio operando com equipe própria.", 10000, 3000, 950, tipo="imovel"),
-            CartaOportunidade("Ações OK4U", "Ações de tecnologia cotadas a preço promocional de R$ 10 cada.", 0, 1000, 0, tipo="acao", preco_unitario=10.0),
-            CartaOportunidade("Ações MYT4", "Ações farmacêuticas em oferta por R$ 20 cada (pagam dividendos).", 0, 1000, 50, tipo="acao", preco_unitario=20.0)
+            CartaOportunidade("Lavanderia Self-Service", "Negócio automatizado operando com alta margem.", 12000, 3000, 950, tipo="imovel"),
+            CartaOportunidade("Franquia de Cafeteria", "Loja em centro comercial com fluxo contínuo.", 25000, 5000, 1200, tipo="imovel"),
+            CartaOportunidade("Startup de IA", "Participação societária com retorno mensal garantido.", 15000, 4000, 1400, tipo="imovel"),
+            CartaOportunidade("Kitnet Universitária", "Aluguel estável para estudantes universitários.", 35000, 1200, 350, tipo="imovel"),
+            CartaOportunidade("Ações OK4U", "Empresa de tecnologia cotada a preço com desconto (R$ 10).", 0, 1000, 0, tipo="acao", preco_unitario=10.0),
+            CartaOportunidade("Ações MYT4", "Setor de saúde e biotecnologia com dividendos (R$ 20).", 0, 1000, 40, tipo="acao", preco_unitario=20.0),
+            CartaOportunidade("Fundo Imob FII11", "Cotas de galpões logísticos (R$ 50 cada / Dividendos R$ 2).", 0, 1000, 2, tipo="acao", preco_unitario=50.0),
+            CartaOportunidade("Criptoativo BTC-Node", "Cotas digitais de alta valorização (R$ 25 cada).", 0, 500, 0, tipo="cripto", preco_unitario=25.0)
         ]
 
+        # Baralho Expandido de Mercado
         self.baralho_mercado = [
-            CartaMercado("Comprador de Apartamento Studio", "Investidor procura Studios e paga R$ 4.000 por unidade!", "imovel", "Apartamento Studio", 4000.0),
-            CartaMercado("Comprador de Casa 2 Quartos", "Fundo imobiliário oferece R$ 3.000 pela entrada da Casa 2 Quartos!", "imovel", "Casa 2 Quartos", 3000.0),
-            CartaMercado("Boom nas Ações OK4U", "As ações da OK4U dispararam para R$ 40 cada! Venda suas cotas com alto lucro.", "acao", "Ações OK4U", 40.0),
-            CartaMercado("Alta nas Ações MYT4", "Ações MYT4 subiram para R$ 50 cada! Excelente janela para realizar lucros.", "acao", "Ações MYT4", 50.0)
+            CartaMercado("Boom em Studios", "Fundo Imobiliário adquire Studios por R$ 4.500 cada!", "imovel", "Apartamento Studio", 4500.0),
+            CartaMercado("Comprador de Casa 2 Quartos", "Família faz proposta irresistível: R$ 3.500 pela sua casa!", "imovel", "Casa 2 Quartos", 3500.0),
+            CartaMercado("Aquisição de Lavanderia", "Rede multinacional compra lavanderias por R$ 7.000!", "imovel", "Lavanderia Self-Service", 7000.0),
+            CartaMercado("Rally das Ações OK4U", "Ações OK4U sobem para R$ 40 cada! Venda suas cotas com grande lucro.", "acao", "Ações OK4U", 40.0),
+            CartaMercado("Alta Histórica MYT4", "Ações MYT4 disparam para R$ 50 cada!", "acao", "Ações MYT4", 50.0),
+            CartaMercado("Explosão Cripto", "Criptoativo BTC-Node disparou para R$ 75 por cota!", "cripto", "Criptoativo BTC-Node", 75.0),
+            CartaMercado("Venda de Cafeteria", "Grupo de investimentos compra sua cafeteria por R$ 12.000!", "imovel", "Franquia de Cafeteria", 12000.0)
         ]
 
+        # Baralho Expandido de Besteiras
         self.baralho_besteiras = [
-            CartaBesteira("Smartphone Top de Linha", 1200),
-            CartaBesteira("Jantar de Luxo e Comemoração", 450),
-            CartaBesteira("Conserto Urgente do Veículo", 800),
-            CartaBesteira("Cafeteira Expresso Importada", 500)
+            CartaBesteira("Smartphone Top de Linha", 1200, "Lançamento imperdível com câmera de última geração."),
+            CartaBesteira("Jantar de Luxo e Comemoração", 450, "Festa em restaurante renomado."),
+            CartaBesteira("Conserto Urgente do Veículo", 850, "Troca de amortecedores e pneus."),
+            CartaBesteira("Cafeteira Expresso Importada", 600, "Novo eletrodoméstico para a cozinha."),
+            CartaBesteira("Imposto Inesperado / Multa", 700, "Cobrança tributária de regularização."),
+            CartaBesteira("Viagem de Fim de Semana", 950, "Passagens de última hora para a praia.")
         ]
 
+        # Baralho Expandido de Pista Rápida
         self.baralho_rapido_negocios = [
             CartaPistaRapida("Franquia de Fast Food", 100000, 10000, 'negocio'),
             CartaPistaRapida("Shopping Center Regional", 350000, 30000, 'negocio'),
             CartaPistaRapida("Parque Solar de Energia", 200000, 18000, 'negocio'),
-            CartaPistaRapida("Rede de Farmácias", 150000, 14000, 'negocio')
+            CartaPistaRapida("Rede de Farmácias", 150000, 14000, 'negocio'),
+            CartaPistaRapida("Concessionária de Veículos Elétricos", 280000, 25000, 'negocio'),
+            CartaPistaRapida("Complexo de Clínicas Médicas", 400000, 38000, 'negocio')
         ]
 
         self.jogadores: List[Jogador] = []
@@ -273,7 +291,7 @@ class Jogo:
                     self.avancar_turno()
             elif mov["casa_atual"] == "Besteira":
                 self.carta_ativa = random.choice(self.baralho_besteiras)
-                evento = {"tipo": "besteira", "titulo": self.carta_ativa.titulo, "valor": self.carta_ativa.valor}
+                evento = {"tipo": "besteira", "titulo": self.carta_ativa.titulo, "descricao": self.carta_ativa.descricao, "valor": self.carta_ativa.valor}
             elif mov["casa_atual"] == "Payday":
                 self.avancar_turno()
         else:
@@ -308,13 +326,13 @@ class Jogo:
         if not b.na_pista_rapida:
             if mov["casa_atual"] == "Oportunidade":
                 carta = random.choice(self.baralho_oportunidades)
-                if carta.tipo == "acao":
-                    qtd = 100
+                if carta.tipo in ["acao", "cripto"]:
+                    qtd = 100 if carta.preco_unitario <= 25 else 20
                     custo = carta.preco_unitario * qtd
-                    if b.caixa >= custo and carta.preco_unitario <= 20:
+                    if b.caixa >= custo:
                         b.caixa -= custo
-                        b.ativos.append(Ativo(carta.titulo, custo, carta.renda_mensal, tipo="acao", quantidade=qtd, preco_compra_unitario=carta.preco_unitario))
-                        log_bot += f" Comprou {qtd} ações de {carta.titulo}."
+                        b.ativos.append(Ativo(carta.titulo, custo, carta.renda_mensal, tipo=carta.tipo, quantidade=qtd, preco_compra_unitario=carta.preco_unitario))
+                        log_bot += f" Comprou {qtd} cotas de {carta.titulo}."
                 else:
                     roi = carta.renda_mensal / carta.entrada
                     if roi >= 0.12 and b.caixa >= carta.entrada:
@@ -322,12 +340,12 @@ class Jogo:
                         b.ativos.append(Ativo(carta.titulo, carta.entrada, carta.renda_mensal, tipo="imovel"))
                         log_bot += f" Comprou '{carta.titulo}' (+R$ {carta.renda_mensal:.0f}/mês)."
             elif mov["casa_atual"] == "Mercado":
-                acao = next((a for a in b.ativos if a.tipo == "acao"), None)
-                if acao:
-                    ganho = acao.quantidade * 40.0
+                ativo_cotado = next((a for a in b.ativos if a.tipo in ["acao", "cripto"]), None)
+                if ativo_cotado:
+                    ganho = ativo_cotado.quantidade * 45.0
                     b.caixa += ganho
-                    b.ativos.remove(acao)
-                    log_bot += f" Vendeu ações no mercado por R$ {ganho:.0f}!"
+                    b.ativos.remove(ativo_cotado)
+                    log_bot += f" Vendeu {ativo_cotado.nome} com lucro por R$ {ganho:.0f}!"
             elif mov["casa_atual"] == "Besteira":
                 besteira = random.choice(self.baralho_besteiras)
                 if b.caixa < besteira.valor:
@@ -336,7 +354,7 @@ class Jogo:
                     b.caixa += emp
                     b.emprestimos += emp
                 b.caixa -= besteira.valor
-                log_bot += f" Gastou com {besteira.titulo} (-R$ {besteira.valor:.0f})."
+                log_bot += f" Teve imprevisto: {besteira.titulo} (-R$ {besteira.valor:.0f})."
         else:
             if mov["casa_atual"] == "Negócio Rápido":
                 carta = random.choice(self.baralho_rapido_negocios)
@@ -362,10 +380,10 @@ class Jogo:
             return {"sucesso": False, "mensagem": "Nenhuma carta ativa."}
 
         if isinstance(self.carta_ativa, CartaOportunidade):
-            if self.carta_ativa.tipo == "acao":
+            if self.carta_ativa.tipo in ["acao", "cripto"]:
                 custo_total = self.carta_ativa.preco_unitario * quantidade
                 if j.caixa < custo_total:
-                    return {"sucesso": False, "mensagem": f"Caixa insuficiente para comprar {quantidade} ações!"}
+                    return {"sucesso": False, "mensagem": f"Caixa insuficiente para comprar {quantidade} cotas!"}
                 
                 j.caixa -= custo_total
                 ativo_existente = next((a for a in j.ativos if a.nome == self.carta_ativa.titulo), None)
@@ -374,15 +392,15 @@ class Jogo:
                 else:
                     j.ativos.append(Ativo(
                         nome=self.carta_ativa.titulo, entrada=custo_total, renda_mensal=self.carta_ativa.renda_mensal,
-                        tipo="acao", quantidade=quantidade, preco_compra_unitario=self.carta_ativa.preco_unitario
+                        tipo=self.carta_ativa.tipo, quantidade=quantidade, preco_compra_unitario=self.carta_ativa.preco_unitario
                     ))
-                msg = f"{j.nome} comprou {quantidade} cotas de {self.carta_ativa.titulo}!"
+                msg = f"{j.nome} adquiriu {quantidade} cotas de {self.carta_ativa.titulo}!"
             else:
                 if j.caixa < self.carta_ativa.entrada:
                     return {"sucesso": False, "mensagem": "Caixa insuficiente para a entrada!"}
                 j.caixa -= self.carta_ativa.entrada
                 j.ativos.append(Ativo(self.carta_ativa.titulo, self.carta_ativa.entrada, self.carta_ativa.renda_mensal, tipo="imovel"))
-                msg = f"{j.nome} comprou: {self.carta_ativa.titulo}!"
+                msg = f"{j.nome} investiu em: {self.carta_ativa.titulo}!"
 
         elif isinstance(self.carta_ativa, CartaPistaRapida):
             if j.caixa < self.carta_ativa.custo:
@@ -430,7 +448,7 @@ class Jogo:
         if not alvo:
             return {"sucesso": False, "mensagem": "Você não possui este ativo."}
 
-        if alvo.tipo == "acao":
+        if alvo.tipo in ["acao", "cripto"]:
             valor_total = alvo.quantidade * self.carta_ativa.preco_oferta
             j.caixa += valor_total
             j.ativos.remove(alvo)

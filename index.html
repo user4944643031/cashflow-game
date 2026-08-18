@@ -2,7 +2,10 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Cashflow Game - Multiplayer Online</title>
     <style>
       * {
@@ -18,8 +21,9 @@
         justify-content: center;
         align-items: center;
         min-height: 100vh;
-        padding: 15px;
+        padding: 10px;
         overflow-x: hidden;
+        position: relative;
       }
 
       #confetti-canvas {
@@ -30,6 +34,43 @@
         height: 100%;
         pointer-events: none;
         z-index: 100;
+      }
+
+      /* Floating Reaction Emojis Container */
+      #reactions-floating-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 90;
+        overflow: hidden;
+      }
+      .floating-emoji {
+        position: absolute;
+        bottom: 60px;
+        font-size: 28px;
+        animation: floatUp 2.8s ease-out forwards;
+        opacity: 1;
+        filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
+      }
+      @keyframes floatUp {
+        0% {
+          transform: translateY(0) scale(0.6);
+          opacity: 0;
+        }
+        15% {
+          opacity: 1;
+          transform: translateY(-30px) scale(1.2);
+        }
+        80% {
+          opacity: 0.9;
+        }
+        100% {
+          transform: translateY(-450px) scale(1.5);
+          opacity: 0;
+        }
       }
 
       .overlay {
@@ -43,12 +84,13 @@
         justify-content: center;
         align-items: center;
         z-index: 50;
+        padding: 10px;
       }
       .modal-card {
         background: #131d2e;
         border: 2px solid #38bdf8;
         border-radius: 16px;
-        padding: 24px;
+        padding: 22px;
         width: 100%;
         max-width: 580px;
         max-height: 90vh;
@@ -116,7 +158,6 @@
         background: #475569;
       }
 
-      /* Lista de Participantes no Lobby */
       .lobby-players-list {
         background: #0b1329;
         border: 1px solid #334155;
@@ -160,11 +201,38 @@
         cursor: pointer;
       }
 
-      /* Layout Mesa Principal */
+      /* Status de Conexão */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 3px 8px;
+        border-radius: 12px;
+        background: #0f172a;
+        border: 1px solid #334155;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+      }
+      .dot-green {
+        background: #4ade80;
+        box-shadow: 0 0 6px #4ade80;
+      }
+      .dot-yellow {
+        background: #facc15;
+        box-shadow: 0 0 6px #facc15;
+      }
+
+      /* Mesa de Jogo */
       .game-wrapper {
         display: flex;
-        gap: 20px;
-        max-width: 1180px;
+        gap: 16px;
+        max-width: 1240px;
         width: 100%;
         flex-wrap: wrap;
         justify-content: center;
@@ -173,7 +241,7 @@
       .boards-column {
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 12px;
         width: 440px;
       }
       .board-box {
@@ -195,6 +263,7 @@
       .btn-group-top {
         display: flex;
         gap: 6px;
+        align-items: center;
       }
       .btn-top {
         background: #334155;
@@ -301,8 +370,8 @@
         background: #131d2e;
         border: 1px solid #1e293b;
         border-radius: 16px;
-        padding: 16px;
-        width: 600px;
+        padding: 14px;
+        width: 620px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -310,9 +379,9 @@
 
       .players-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 10px;
-        margin-bottom: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 8px;
+        margin-bottom: 8px;
       }
       .player-card {
         background: #0b1329;
@@ -341,8 +410,8 @@
         background: #0b1329;
         border: 1px solid #1e293b;
         border-radius: 8px;
-        padding: 8px 12px;
-        margin-bottom: 10px;
+        padding: 6px 10px;
+        margin-bottom: 8px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -367,9 +436,9 @@
       .assets-box {
         background: #0b1329;
         border-radius: 8px;
-        padding: 8px 12px;
-        margin-bottom: 10px;
-        max-height: 70px;
+        padding: 6px 10px;
+        margin-bottom: 8px;
+        max-height: 60px;
         overflow-y: auto;
         text-align: left;
       }
@@ -377,7 +446,7 @@
         font-size: 10px;
         color: #94a3b8;
         text-transform: uppercase;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
       }
       .asset-item {
         font-size: 11px;
@@ -393,7 +462,7 @@
         color: white;
         border: none;
         padding: 12px;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: bold;
         border-radius: 8px;
         cursor: pointer;
@@ -429,7 +498,7 @@
         border-radius: 8px;
         padding: 12px;
         text-align: left;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
       }
       #card-modal.modal-besteira {
         border-color: #ef4444;
@@ -505,22 +574,99 @@
       }
 
       #log {
-        padding: 8px;
+        padding: 6px 8px;
         background: #0b1329;
         border-radius: 8px;
-        font-size: 12px;
+        font-size: 11px;
         color: #e2e8f0;
         border: 1px dashed #334155;
         text-align: center;
-        min-height: 40px;
+        min-height: 36px;
         line-height: 1.3;
+      }
+
+      /* Social / Chat & Reactions Bar */
+      .social-bar {
+        margin-top: 8px;
+        background: #0b1329;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 6px 8px;
+      }
+      .quick-reactions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .reaction-btn {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        padding: 3px 6px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: transform 0.1s;
+      }
+      .reaction-btn:hover {
+        transform: scale(1.15);
+        background: #334155;
+      }
+      .reaction-btn:active {
+        transform: scale(0.9);
+      }
+
+      .chat-container {
+        display: flex;
+        gap: 4px;
+      }
+      .chat-input {
+        flex: 1;
+        background: #131d2e;
+        border: 1px solid #334155;
+        border-radius: 5px;
+        padding: 4px 8px;
+        color: #fff;
+        font-size: 11px;
+        outline: none;
+      }
+      .btn-send {
+        background: #0284c7;
+        color: white;
+        border: none;
+        padding: 4px 10px;
+        border-radius: 5px;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .chat-feed {
+        max-height: 48px;
+        overflow-y: auto;
+        margin-top: 4px;
+        font-size: 10px;
+        color: #94a3b8;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .chat-msg {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 2px 4px;
+        border-radius: 4px;
+        word-break: break-word;
+      }
+      .chat-msg strong {
+        color: #38bdf8;
       }
     </style>
   </head>
   <body>
     <canvas id="confetti-canvas"></canvas>
+    <div id="reactions-floating-container"></div>
 
-    <!-- Overlay 1: Criar ou Entrar em Sala -->
+    <!-- Overlay 1: Entrada / Criação -->
     <div class="overlay" id="entry-overlay">
       <div class="modal-card">
         <h2>🎲 Cashflow Online Multiplayer</h2>
@@ -532,7 +678,7 @@
             margin-bottom: 14px;
           "
         >
-          Jogue com amigos em tempo real através do link de convite.
+          Simulação financeira com salas online, IA e sincronização ao vivo.
         </p>
 
         <div class="form-group">
@@ -599,7 +745,7 @@
         </h2>
 
         <div class="share-box">
-          <p>Envie o link abaixo para seus amigos entrarem direto:</p>
+          <p>Envie o link de convite para seus amigos jogarem junto:</p>
           <button class="btn-copy" onclick="copiarLinkConvite()">
             📋 Copiar Link de Convite
           </button>
@@ -624,7 +770,7 @@
               margin-bottom: 6px;
             "
           >
-            Participantes na Sala (<span id="lobby-count">0</span>/4):
+            Participantes (<span id="lobby-count">0</span>/4):
           </div>
           <div id="lobby-players-container"></div>
         </div>
@@ -655,7 +801,7 @@
       </div>
     </div>
 
-    <!-- Mesa Principal de Jogo -->
+    <!-- Mesa Principal -->
     <div class="game-wrapper">
       <div class="boards-column">
         <div class="board-box">
@@ -664,8 +810,11 @@
               🐭 Corrida dos Ratos
             </div>
             <div class="btn-group-top">
+              <span id="net-status" class="status-badge"
+                ><span class="dot dot-green"></span> Online</span
+              >
               <button class="btn-top" onclick="copiarLinkConvite()">
-                🔗 Link Sala
+                🔗 Link
               </button>
             </div>
           </div>
@@ -711,7 +860,7 @@
             </div>
           </div>
 
-          <!-- Modal Interativo -->
+          <!-- Modal de Ação da Casa -->
           <div id="card-modal">
             <h3 id="card-titulo">Carta</h3>
             <p id="card-desc"></p>
@@ -803,8 +952,48 @@
           <button id="btn-dado" class="btn-rolar" onclick="fazerJogadaHumano()">
             🎲 Rolar Dado
           </button>
-          <div id="log" style="margin-top: 8px">
+          <div id="log" style="margin-top: 6px">
             Aguardando o início da rodada...
+          </div>
+
+          <!-- Chat & Reações Rápidas -->
+          <div class="social-bar">
+            <div class="quick-reactions">
+              <span style="font-size: 10px; color: #94a3b8; font-weight: bold"
+                >REAÇÕES:</span
+              >
+              <button class="reaction-btn" onclick="enviarReacao('🚀')">
+                🚀
+              </button>
+              <button class="reaction-btn" onclick="enviarReacao('💸')">
+                💸
+              </button>
+              <button class="reaction-btn" onclick="enviarReacao('🔥')">
+                🔥
+              </button>
+              <button class="reaction-btn" onclick="enviarReacao('😭')">
+                😭
+              </button>
+              <button class="reaction-btn" onclick="enviarReacao('👑')">
+                👑
+              </button>
+              <button class="reaction-btn" onclick="enviarReacao('👏')">
+                👏
+              </button>
+            </div>
+            <div class="chat-container">
+              <input
+                type="text"
+                id="chat-msg-input"
+                class="chat-input"
+                placeholder="Mensagem rápida (ex: Boa jogada!)..."
+                onkeydown="if (event.key === 'Enter') enviarMensagemChat();"
+              />
+              <button class="btn-send" onclick="enviarMensagemChat()">
+                Enviar
+              </button>
+            </div>
+            <div class="chat-feed" id="chat-feed"></div>
           </div>
         </div>
       </div>
@@ -816,8 +1005,11 @@
         "usr_" + Math.random().toString(36).substring(2, 9);
       localStorage.setItem("cashflow_client_id", myClientId);
 
-      let currentSalaCodigo = null;
+      let currentSalaCodigo =
+        localStorage.getItem("cashflow_sala_codigo") || null;
+      let myUserName = localStorage.getItem("cashflow_user_name") || "Jogador";
       let ws = null;
+      let reconnectTimer = null;
       let estadoJogo = null;
       let dadosOpcoes = { profissoes: [], sonhos: [] };
       let precoAcaoAtiva = 0;
@@ -882,6 +1074,18 @@
           else ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
         render();
+      }
+
+      function animarEmojiFlutuante(emoji) {
+        const container = document.getElementById(
+          "reactions-floating-container",
+        );
+        const el = document.createElement("div");
+        el.className = "floating-emoji";
+        el.innerText = emoji;
+        el.style.left = `${Math.floor(Math.random() * 70) + 15}%`;
+        container.appendChild(el);
+        setTimeout(() => el.remove(), 2900);
       }
 
       const casasRatos = [
@@ -1006,20 +1210,41 @@
           .map((s) => `<option value="${s.titulo}">${s.titulo}</option>`)
           .join("");
 
-        // Checa se há parâmetro ?sala=XXXXXX na URL
         const urlParams = new URLSearchParams(window.location.search);
-        const salaUrl = urlParams.get("sala");
+        const salaUrl = urlParams.get("sala") || currentSalaCodigo;
         if (salaUrl) {
           document.getElementById("input-codigo-sala").value =
             salaUrl.toUpperCase();
+          currentSalaCodigo = salaUrl.toUpperCase();
+          localStorage.setItem("cashflow_sala_codigo", currentSalaCodigo);
         }
       }
 
+      // Reconexão Automática Silenciosa via WebSocket
       function conectarWebSocket(codigo) {
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         ws = new WebSocket(
           `${protocol}//${window.location.host}/ws/${codigo}/${myClientId}`,
         );
+
+        ws.onopen = () => {
+          document.getElementById("net-status").innerHTML =
+            '<span class="dot dot-green"></span> Online';
+        };
+
+        ws.onclose = () => {
+          document.getElementById("net-status").innerHTML =
+            '<span class="dot dot-yellow"></span> Reconectando...';
+          reconnectTimer = setTimeout(() => {
+            if (currentSalaCodigo) conectarWebSocket(currentSalaCodigo);
+          }, 2000);
+        };
+
+        ws.onerror = () => {
+          ws.close();
+        };
 
         ws.onmessage = async (event) => {
           const data = JSON.parse(event.data);
@@ -1050,13 +1275,19 @@
             estadoJogo = data.estado;
             atualizarTela();
             processarTurno();
+          } else if (data.tipo === "novo_chat") {
+            adicionarMensagemNoFeed(data.remetente, data.texto);
+          } else if (data.tipo === "nova_reacao") {
+            animarEmojiFlutuante(data.emoji);
           }
         };
       }
 
       async function criarNovaSala() {
-        const nome =
+        myUserName =
           document.getElementById("user-nome").value.trim() || "Jogador 1";
+        localStorage.setItem("cashflow_user_name", myUserName);
+
         const prof = document.getElementById("user-prof").value;
         const sonho = document.getElementById("user-sonho").value;
 
@@ -1065,15 +1296,15 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             client_id: myClientId,
-            nome,
+            nome: myUserName,
             profissao: prof,
             sonho,
           }),
         });
         const data = await res.json();
         currentSalaCodigo = data.codigo;
+        localStorage.setItem("cashflow_sala_codigo", currentSalaCodigo);
 
-        // Atualiza URL sem recarregar a página
         window.history.pushState({}, "", `?sala=${currentSalaCodigo}`);
 
         conectarWebSocket(currentSalaCodigo);
@@ -1092,8 +1323,10 @@
           return;
         }
 
-        const nome =
+        myUserName =
           document.getElementById("user-nome").value.trim() || "Convidado";
+        localStorage.setItem("cashflow_user_name", myUserName);
+
         const prof = document.getElementById("user-prof").value;
         const sonho = document.getElementById("user-sonho").value;
 
@@ -1103,7 +1336,7 @@
           body: JSON.stringify({
             codigo,
             client_id: myClientId,
-            nome,
+            nome: myUserName,
             profissao: prof,
             sonho,
           }),
@@ -1115,6 +1348,7 @@
         }
 
         currentSalaCodigo = codigo;
+        localStorage.setItem("cashflow_sala_codigo", currentSalaCodigo);
         window.history.pushState({}, "", `?sala=${currentSalaCodigo}`);
 
         conectarWebSocket(currentSalaCodigo);
@@ -1145,7 +1379,7 @@
                         <strong>${j.is_bot ? "🤖" : "👤"} ${j.nome}</strong>
                         <span style="color:#94a3b8; font-size:11px;">(${j.profissao})</span>
                     </div>
-                    <span style="color:#facc15; font-size:11px;">${idx === 0 ? "👑 Criador" : "Pronto"}</span>
+                    <span style="color:#facc15; font-size:11px;">${idx === 0 ? "👑 Anfitrião" : "Pronto"}</span>
                 </div>
             `,
           )
@@ -1192,6 +1426,35 @@
         });
       }
 
+      function enviarReacao(emoji) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({ acao: "reacao_emoji", emoji, nome: myUserName }),
+          );
+        }
+      }
+
+      function enviarMensagemChat() {
+        const input = document.getElementById("chat-msg-input");
+        const texto = input.value.trim();
+        if (!texto) return;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({ acao: "chat_mensagem", texto, nome: myUserName }),
+          );
+          input.value = "";
+        }
+      }
+
+      function adicionarMensagemNoFeed(remetente, texto) {
+        const feed = document.getElementById("chat-feed");
+        const div = document.createElement("div");
+        div.className = "chat-msg";
+        div.innerHTML = `<strong>${remetente}:</strong> ${texto}`;
+        feed.appendChild(div);
+        feed.scrollTop = feed.scrollHeight;
+      }
+
       function atualizarTela() {
         if (!estadoJogo || !estadoJogo.jogadores) return;
 
@@ -1223,7 +1486,7 @@
           if (me.ativos && me.ativos.length > 0) {
             lista.innerHTML = me.ativos
               .map((a) => {
-                if (a.tipo === "acao")
+                if (a.tipo in ["acao", "cripto"])
                   return `<div class="asset-item"><span>📈 ${a.quantidade}x ${a.nome}</span><span style="color:#38bdf8;">(Custo: R$ ${a.preco_unitario.toFixed(2)})</span></div>`;
                 return `<div class="asset-item"><span>🏠 ${a.nome}</span><span style="color:#4ade80;">+R$ ${a.renda.toFixed(2)}/mês</span></div>`;
               })
@@ -1261,7 +1524,6 @@
         const btnDado = document.getElementById("btn-dado");
         const modal = document.getElementById("card-modal");
 
-        // Se for bot, o host da sala envia a ordem de jogada
         if (cur.is_bot) {
           btnDado.disabled = true;
           btnDado.innerText = `🤖 Vez de ${cur.nome}...`;
@@ -1277,7 +1539,6 @@
           return;
         }
 
-        // Se for humano
         if (isMyTurn) {
           btnDado.disabled = false;
           btnDado.innerText = `🎲 Sua Vez: Rolar Dado`;
@@ -1290,7 +1551,6 @@
             `Aguardando <strong>${cur.nome}</strong> jogar...`;
         }
 
-        // Exibição de cards
         const ev = estadoJogo.evento_atual;
         const actInvestir = document.getElementById("actions-investir");
         const actMercado = document.getElementById("actions-mercado");
@@ -1308,10 +1568,10 @@
             document.getElementById("card-desc").innerText =
               ev.descricao || "Negócio da Pista Rápida.";
 
-            if (ev.subtipo === "acao") {
+            if (ev.subtipo in ["acao", "cripto"]) {
               precoAcaoAtiva = ev.preco_unitario;
               document.getElementById("card-custo-container").innerHTML =
-                `<strong>Preço por Ação:</strong> R$ <span style="color:#f87171;">${ev.preco_unitario.toFixed(2)}</span>`;
+                `<strong>Preço por Cota:</strong> R$ <span style="color:#f87171;">${ev.preco_unitario.toFixed(2)}</span>`;
               document.getElementById("card-renda-box").style.display =
                 ev.renda > 0 ? "block" : "none";
               if (ev.renda > 0)
@@ -1363,7 +1623,7 @@
             document.getElementById("card-titulo").innerText =
               `💸 Besteira: ${ev.titulo}`;
             document.getElementById("card-desc").innerText =
-              "Despesa imprevista obrigatória!";
+              ev.descricao || "Despesa imprevista obrigatória!";
             document.getElementById("card-custo-container").innerHTML =
               `<strong>Valor a Pagar:</strong> R$ <span style="color:#f87171;">${Number(ev.valor).toFixed(2)}</span>`;
             document.getElementById("card-renda-box").style.display = "none";
@@ -1387,45 +1647,53 @@
       }
 
       function fazerJogadaHumano() {
-        if (ws) ws.send(JSON.stringify({ acao: "jogar_humano" }));
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify({ acao: "jogar_humano" }));
       }
 
       function comprarAtivo() {
         const qtd =
           Number(document.getElementById("input-qtd-acoes").value) || 1;
-        if (ws) ws.send(JSON.stringify({ acao: "comprar", quantidade: qtd }));
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify({ acao: "comprar", quantidade: qtd }));
         somCompra();
         document.getElementById("card-modal").style.display = "none";
       }
 
       function venderAtivoMercado() {
-        if (ws) ws.send(JSON.stringify({ acao: "vender_mercado" }));
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify({ acao: "vender_mercado" }));
         somPayday();
         document.getElementById("card-modal").style.display = "none";
       }
 
       function pagarBesteira() {
-        if (ws) ws.send(JSON.stringify({ acao: "pagar_besteira" }));
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify({ acao: "pagar_besteira" }));
         document.getElementById("card-modal").style.display = "none";
       }
 
       function passarVez() {
-        if (ws) ws.send(JSON.stringify({ acao: "passar" }));
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify({ acao: "passar" }));
         document.getElementById("card-modal").style.display = "none";
       }
 
       function entrarPistaRapida() {
-        if (ws) ws.send(JSON.stringify({ acao: "entrar_pista_rapida" }));
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify({ acao: "entrar_pista_rapida" }));
         somVitoria();
       }
 
       function pegarEmprestimo() {
-        if (ws) ws.send(JSON.stringify({ acao: "emprestimo" }));
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify({ acao: "emprestimo" }));
         somPayday();
       }
 
       function quitarEmprestimo() {
-        if (ws) ws.send(JSON.stringify({ acao: "quitar_emprestimo" }));
+        if (ws && ws.readyState === WebSocket.OPEN)
+          ws.send(JSON.stringify({ acao: "quitar_emprestimo" }));
         somCompra();
       }
 
