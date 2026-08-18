@@ -1,0 +1,1298 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cashflow Game - Edição Pro</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      body {
+        background-color: #090d16;
+        color: #f8fafc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 15px;
+        overflow-x: hidden;
+      }
+
+      #confetti-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 100;
+      }
+
+      .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(9, 13, 22, 0.95);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 50;
+      }
+      .modal-card {
+        background: #131d2e;
+        border: 2px solid #38bdf8;
+        border-radius: 16px;
+        padding: 24px;
+        width: 100%;
+        max-width: 520px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+      }
+      .modal-card h2 {
+        color: #38bdf8;
+        font-size: 20px;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+      .form-group {
+        margin-bottom: 14px;
+      }
+      .form-group label {
+        display: block;
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #cbd5e1;
+        margin-bottom: 6px;
+      }
+      .form-group select,
+      .form-group input {
+        width: 100%;
+        background: #0b1329;
+        color: #f8fafc;
+        border: 1px solid #334155;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 14px;
+        outline: none;
+      }
+      .btn-start {
+        background: #2563eb;
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: bold;
+        width: 100%;
+        cursor: pointer;
+      }
+      .btn-start:hover {
+        background: #1d4ed8;
+      }
+
+      .rank-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+        font-size: 12px;
+      }
+      .rank-table th,
+      .rank-table td {
+        padding: 8px 6px;
+        text-align: left;
+        border-bottom: 1px solid #1e293b;
+      }
+      .rank-table th {
+        color: #38bdf8;
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+
+      .game-wrapper {
+        display: flex;
+        gap: 20px;
+        max-width: 1160px;
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      /* Coluna dos Dois Tabuleiros */
+      .boards-column {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 440px;
+      }
+
+      .board-box {
+        background: #131d2e;
+        border: 1px solid #1e293b;
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .board-box.destaque-pista {
+        border-color: #eab308;
+        box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
+      }
+      .board-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .board-header {
+        font-size: 14px;
+        font-weight: bold;
+      }
+      .btn-group-top {
+        display: flex;
+        gap: 6px;
+      }
+      .btn-top {
+        background: #334155;
+        color: #cbd5e1;
+        border: none;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: bold;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .btn-top:hover {
+        background: #475569;
+      }
+
+      /* Grid Tabuleiro Ratos (4x4) */
+      .grid-ratos {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+        gap: 5px;
+        width: 410px;
+        height: 260px;
+      }
+
+      /* Grid Tabuleiro Pista Rápida (4x2 em anel) */
+      .grid-pista {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 5px;
+        width: 410px;
+        height: 120px;
+      }
+
+      .cell {
+        background: #1e293b;
+        border: 2px solid #334155;
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: bold;
+        position: relative;
+        text-align: center;
+        padding: 2px;
+      }
+      .cell.payday {
+        border-color: #eab308;
+        color: #facc15;
+      }
+      .cell.oportunidade {
+        border-color: #22c55e;
+        color: #4ade80;
+      }
+      .cell.besteira {
+        border-color: #ef4444;
+        color: #f87171;
+      }
+      .cell.mercado {
+        border-color: #a855f7;
+        color: #c084fc;
+      }
+      .cell.sonho {
+        border-color: #ec4899;
+        color: #f472b6;
+      }
+      .cell.rapido {
+        border-color: #06b6d4;
+        color: #22d3ee;
+      }
+
+      .cell-center {
+        grid-column: 2 / 4;
+        grid-row: 2 / 4;
+        background: #0f172a;
+        border: 1px dashed #334155;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: bold;
+      }
+
+      .pawn {
+        position: absolute;
+        font-size: 14px;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+      }
+      .pawn.humano {
+        top: -6px;
+        left: -4px;
+        background: #facc15;
+        box-shadow: 0 0 8px #facc15;
+      }
+      .pawn.bot {
+        bottom: -6px;
+        right: -4px;
+        background: #38bdf8;
+        box-shadow: 0 0 8px #38bdf8;
+      }
+
+      .sidebar {
+        background: #131d2e;
+        border: 1px solid #1e293b;
+        border-radius: 16px;
+        padding: 18px;
+        width: 560px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .players-comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .player-card {
+        background: #0b1329;
+        border: 1px solid #1e293b;
+        border-radius: 10px;
+        padding: 10px;
+        font-size: 12px;
+      }
+      .player-card.active {
+        border-color: #38bdf8;
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+      }
+      .player-card h3 {
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+      .player-card p {
+        margin-bottom: 3px;
+        color: #cbd5e1;
+        font-size: 11px;
+      }
+
+      .bank-box {
+        background: #0b1329;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .btn-bank {
+        padding: 5px 8px;
+        border-radius: 5px;
+        border: none;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .btn-bank.add {
+        background: #3b82f6;
+        color: white;
+      }
+      .btn-bank.pay {
+        background: #10b981;
+        color: white;
+      }
+
+      .assets-box {
+        background: #0b1329;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+        max-height: 80px;
+        overflow-y: auto;
+        text-align: left;
+      }
+      .assets-box h4 {
+        font-size: 10px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .asset-item {
+        font-size: 11px;
+        display: flex;
+        justify-content: space-between;
+        padding: 2px 0;
+        border-bottom: 1px solid #1e293b;
+        color: #cbd5e1;
+      }
+
+      .btn-rolar {
+        background: #2563eb;
+        color: white;
+        border: none;
+        padding: 12px;
+        font-size: 15px;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        width: 100%;
+      }
+      .btn-rolar:hover {
+        background: #1d4ed8;
+      }
+      .btn-rolar:disabled {
+        background: #334155;
+        color: #64748b;
+        cursor: not-allowed;
+      }
+
+      .btn-avancar {
+        background: #eab308;
+        color: #000;
+        border: none;
+        padding: 12px;
+        font-size: 14px;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        width: 100%;
+        margin-bottom: 8px;
+        display: none;
+      }
+
+      #card-modal {
+        display: none;
+        background: #0b1329;
+        border: 2px solid #38bdf8;
+        border-radius: 8px;
+        padding: 14px;
+        text-align: left;
+        margin-bottom: 10px;
+      }
+      #card-modal.modal-besteira {
+        border-color: #ef4444;
+      }
+      #card-modal.modal-mercado {
+        border-color: #a855f7;
+      }
+      #card-modal h3 {
+        color: #facc15;
+        font-size: 14px;
+        margin-bottom: 6px;
+      }
+      #card-modal.modal-besteira h3 {
+        color: #f87171;
+      }
+      #card-modal.modal-mercado h3 {
+        color: #c084fc;
+      }
+      #card-modal p {
+        font-size: 12px;
+        color: #cbd5e1;
+        margin-bottom: 4px;
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .btn-comprar {
+        background: #16a34a;
+        color: white;
+        border: none;
+        padding: 8px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        flex: 1;
+        font-size: 12px;
+      }
+      .btn-vender {
+        background: #a855f7;
+        color: white;
+        border: none;
+        padding: 8px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        flex: 1;
+        font-size: 12px;
+      }
+      .btn-passar {
+        background: #475569;
+        color: white;
+        border: none;
+        padding: 8px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        flex: 1;
+        font-size: 12px;
+      }
+      .btn-pagar-despesa {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 8px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        width: 100%;
+        font-size: 13px;
+      }
+
+      #log {
+        padding: 10px;
+        background: #0b1329;
+        border-radius: 8px;
+        font-size: 12px;
+        color: #e2e8f0;
+        border: 1px dashed #334155;
+        text-align: center;
+        min-height: 44px;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="overlay" id="setup-overlay">
+      <div class="modal-card">
+        <h2>🎯 Novo Jogo - Escolha seu Personagem</h2>
+        <div class="form-group">
+          <label>Profissão</label>
+          <select id="select-profissao"></select>
+        </div>
+        <div class="form-group">
+          <label>Sonho da Pista Rápida</label>
+          <select id="select-sonho"></select>
+        </div>
+        <button class="btn-start" onclick="iniciarJogo()">
+          Começar Partida
+        </button>
+      </div>
+    </div>
+
+    <div class="overlay" id="ranking-overlay" style="display: none">
+      <div class="modal-card">
+        <h2>🏆 Hall da Fama (Melhores Partidas)</h2>
+        <div style="max-height: 250px; overflow-y: auto">
+          <table class="rank-table">
+            <thead>
+              <tr>
+                <th>Vencedor</th>
+                <th>Profissão</th>
+                <th>Turnos</th>
+                <th>Caixa Final</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-tbody"></tbody>
+          </table>
+        </div>
+        <button
+          class="btn-start"
+          style="margin-top: 14px; background: #475569"
+          onclick="fecharRanking()"
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
+
+    <div class="game-wrapper">
+      <div class="boards-column">
+        <!-- Tabuleiro 1: Corrida dos Ratos -->
+        <div class="board-box" id="box-ratos">
+          <div class="board-top">
+            <div class="board-header" style="color: #38bdf8">
+              🐭 Corrida dos Ratos
+            </div>
+            <div class="btn-group-top">
+              <button class="btn-top" onclick="abrirRanking()">
+                🏆 Ranking
+              </button>
+              <button class="btn-top" onclick="abrirSetup()">
+                🔄 Novo Jogo
+              </button>
+            </div>
+          </div>
+          <div class="grid-ratos" id="grid-ratos"></div>
+        </div>
+
+        <!-- Tabuleiro 2: Pista Rápida (Fast Track) -->
+        <div class="board-box" id="box-pista">
+          <div class="board-top">
+            <div class="board-header" style="color: #facc15">
+              🏎️ Pista Rápida (Fast Track)
+            </div>
+          </div>
+          <div class="grid-pista" id="grid-pista"></div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div>
+          <div class="players-comparison">
+            <div class="player-card active" id="card-humano">
+              <h3 style="color: #facc15">🐭 <span id="h-nome">Você</span></h3>
+              <p><strong>Profissão:</strong> <span id="h-prof">-</span></p>
+              <p>
+                <strong>Local:</strong>
+                <span id="h-local" style="font-weight: bold; color: #38bdf8"
+                  >Corrida dos Ratos</span
+                >
+              </p>
+              <p>
+                <strong>Caixa:</strong> R$
+                <span id="h-caixa" style="color: #4ade80">0.00</span>
+              </p>
+              <p>
+                <strong>Renda Passiva:</strong> R$
+                <span id="h-renda" style="color: #38bdf8">0.00</span>
+              </p>
+              <p>
+                <strong>Despesas:</strong> R$
+                <span id="h-despesas" style="color: #f87171">0.00</span>
+              </p>
+              <p>
+                <strong>Fluxo Mensal:</strong> R$ <span id="h-fluxo">0.00</span>
+              </p>
+            </div>
+
+            <div class="player-card" id="card-bot">
+              <h3 style="color: #38bdf8">
+                🤖 <span id="b-nome">IA Rival</span>
+              </h3>
+              <p><strong>Profissão:</strong> <span id="b-prof">-</span></p>
+              <p>
+                <strong>Local:</strong>
+                <span id="b-local" style="font-weight: bold; color: #38bdf8"
+                  >Corrida dos Ratos</span
+                >
+              </p>
+              <p>
+                <strong>Caixa:</strong> R$
+                <span id="b-caixa" style="color: #4ade80">0.00</span>
+              </p>
+              <p>
+                <strong>Renda Passiva:</strong> R$
+                <span id="b-renda" style="color: #38bdf8">0.00</span>
+              </p>
+              <p>
+                <strong>Despesas:</strong> R$
+                <span id="b-despesas" style="color: #f87171">0.00</span>
+              </p>
+              <p>
+                <strong>Fluxo Mensal:</strong> R$ <span id="b-fluxo">0.00</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="bank-box" id="bank-panel">
+            <div style="font-size: 11px">
+              <strong>Empréstimo:</strong> R$
+              <span id="h-divida">0.00</span> (Juros: R$
+              <span id="h-juros">0.00</span>/mês)
+            </div>
+            <div>
+              <button class="btn-bank add" onclick="pegarEmprestimo()">
+                + R$ 1.000
+              </button>
+              <button class="btn-bank pay" onclick="quitarEmprestimo()">
+                - Quitar
+              </button>
+            </div>
+          </div>
+
+          <div class="assets-box">
+            <h4>Meus Ativos & Investimentos</h4>
+            <div id="assets-list">
+              <span style="color: #64748b; font-size: 11px"
+                >Nenhum ativo adquirido ainda.</span
+              >
+            </div>
+          </div>
+
+          <div id="card-modal">
+            <h3 id="card-titulo">Carta</h3>
+            <p id="card-desc"></p>
+            <p id="card-custo-container">
+              <strong>Valor:</strong> R$
+              <span id="card-custo" style="color: #f87171"></span>
+            </p>
+            <p id="card-renda-box">
+              <strong>Renda Passiva:</strong> + R$
+              <span id="card-renda" style="color: #4ade80"></span>
+            </p>
+
+            <div id="box-qtd-acoes" style="display: none; margin: 8px 0">
+              <label style="font-size: 11px; color: #cbd5e1">Qtd. Cotas:</label>
+              <input
+                type="number"
+                id="input-qtd-acoes"
+                value="100"
+                min="10"
+                step="10"
+                style="
+                  background: #090d16;
+                  color: #fff;
+                  border: 1px solid #334155;
+                  padding: 4px 8px;
+                  border-radius: 4px;
+                  width: 80px;
+                  margin-left: 6px;
+                "
+                oninput="atualizarCalculoAcoes()"
+              />
+              <span style="font-size: 11px; margin-left: 8px; color: #38bdf8"
+                >Total: R$ <span id="total-custo-acoes">1000.00</span></span
+              >
+            </div>
+
+            <div class="card-actions" id="actions-investir">
+              <button class="btn-comprar" onclick="comprarAtivo()">
+                Comprar Ativo
+              </button>
+              <button class="btn-passar" onclick="passarVez()">Passar</button>
+            </div>
+
+            <div
+              class="card-actions"
+              id="actions-mercado"
+              style="display: none"
+            >
+              <button class="btn-vender" onclick="venderAtivoMercado()">
+                💰 Vender Ativo ao Mercado
+              </button>
+              <button class="btn-passar" onclick="passarVez()">
+                Manter Ativo
+              </button>
+            </div>
+
+            <div id="actions-besteira" style="display: none; margin-top: 10px">
+              <button class="btn-pagar-despesa" onclick="pagarBesteira()">
+                💸 Pagar Despesa
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <button
+            id="btn-avancar"
+            class="btn-avancar"
+            onclick="entrarPistaRapida()"
+          >
+            🚀 ENTRAR NA PISTA RÁPIDA (FAST TRACK)
+          </button>
+          <button id="btn-dado" class="btn-rolar" onclick="fazerJogadaHumano()">
+            🎲 Sua Vez: Rolar Dado
+          </button>
+          <div id="log" style="margin-top: 8px">
+            Role o dado para iniciar sua jogada.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let posHumano = 0;
+      let posBot = 0;
+      let humanoNaPista = false;
+      let botNaPista = false;
+      let precoAcaoAtiva = 0;
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      // Áudio
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      function tocarSom(frequencias, tipo = "sine", duracao = 0.1) {
+        frequencias.forEach((freq, i) => {
+          setTimeout(() => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = tipo;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(
+              0.01,
+              audioCtx.currentTime + duracao,
+            );
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duracao);
+          }, i * 110);
+        });
+      }
+
+      const somDado = () => tocarSom([220, 330, 440], "triangle", 0.08);
+      const somPasso = () => tocarSom([300], "square", 0.04);
+      const somPayday = () => tocarSom([523, 659, 783, 1046], "sine", 0.18);
+      const somCompra = () => tocarSom([440, 554, 659], "sine", 0.12);
+      const somBesteira = () => tocarSom([350, 260, 180], "sawtooth", 0.25);
+      const somVitoria = () => {
+        tocarSom([523, 659, 783, 1046, 1318], "triangle", 0.35);
+        dispararConfetes();
+      };
+
+      function dispararConfetes() {
+        const canvas = document.getElementById("confetti-canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const pieces = Array.from({ length: 120 }, () => ({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height - canvas.height,
+          size: Math.random() * 8 + 4,
+          color: ["#facc15", "#38bdf8", "#4ade80", "#ec4899", "#a855f7"][
+            Math.floor(Math.random() * 5)
+          ],
+          speed: Math.random() * 4 + 2,
+        }));
+
+        let frame = 0;
+        function render() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          pieces.forEach((p) => {
+            p.y += p.speed;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+          });
+          if (frame++ < 200) requestAnimationFrame(render);
+          else ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        render();
+      }
+
+      const casasRatos = [
+        { id: 0, nome: "💰 Payday", tipo: "payday", col: 1, row: 1 },
+        {
+          id: 1,
+          nome: "📈 Oportunidade",
+          tipo: "oportunidade",
+          col: 2,
+          row: 1,
+        },
+        { id: 2, nome: "💸 Besteira", tipo: "besteira", col: 3, row: 1 },
+        {
+          id: 3,
+          nome: "📈 Oportunidade",
+          tipo: "oportunidade",
+          col: 4,
+          row: 1,
+        },
+        { id: 4, nome: "🏪 Mercado", tipo: "mercado", col: 4, row: 2 },
+        { id: 5, nome: "💰 Payday", tipo: "payday", col: 4, row: 3 },
+        {
+          id: 6,
+          nome: "📈 Oportunidade",
+          tipo: "oportunidade",
+          col: 4,
+          row: 4,
+        },
+        { id: 7, nome: "💸 Besteira", tipo: "besteira", col: 3, row: 4 },
+        {
+          id: 8,
+          nome: "📈 Oportunidade",
+          tipo: "oportunidade",
+          col: 2,
+          row: 4,
+        },
+        { id: 9, nome: "🏪 Mercado", tipo: "mercado", col: 1, row: 4 },
+        { id: 10, nome: "💸 Besteira", tipo: "besteira", col: 1, row: 3 },
+        {
+          id: 11,
+          nome: "📈 Oportunidade",
+          tipo: "oportunidade",
+          col: 1,
+          row: 2,
+        },
+      ];
+
+      const casasPista = [
+        { id: 0, nome: "💵 Cashflow Day", tipo: "payday", col: 1, row: 1 },
+        { id: 1, nome: "🚀 Negócio", tipo: "rapido", col: 2, row: 1 },
+        { id: 2, nome: "💎 Sonho", tipo: "sonho", col: 3, row: 1 },
+        { id: 3, nome: "🚀 Negócio", tipo: "rapido", col: 4, row: 1 },
+        { id: 4, nome: "💵 Cashflow Day", tipo: "payday", col: 4, row: 2 },
+        { id: 5, nome: "🚀 Negócio", tipo: "rapido", col: 3, row: 2 },
+        { id: 6, nome: "💎 Sonho", tipo: "sonho", col: 2, row: 2 },
+        { id: 7, nome: "🚀 Negócio", tipo: "rapido", col: 1, row: 2 },
+      ];
+
+      function renderizarAmbosTabuleiros() {
+        // Renderiza Corrida dos Ratos
+        const gridR = document.getElementById("grid-ratos");
+        gridR.innerHTML = "";
+        casasRatos.forEach((c) => {
+          const cell = document.createElement("div");
+          cell.className = `cell ${c.tipo}`;
+          cell.id = `ratos-cell-${c.id}`;
+          cell.style.gridColumn = c.col;
+          cell.style.gridRow = c.row;
+          cell.innerText = c.nome;
+          gridR.appendChild(cell);
+        });
+        const center = document.createElement("div");
+        center.className = "cell-center";
+        center.innerHTML = `<span>🐭 CORRIDA</span>`;
+        gridR.appendChild(center);
+
+        // Renderiza Pista Rápida
+        const gridP = document.getElementById("grid-pista");
+        gridP.innerHTML = "";
+        casasPista.forEach((c) => {
+          const cell = document.createElement("div");
+          cell.className = `cell ${c.tipo}`;
+          cell.id = `pista-cell-${c.id}`;
+          cell.style.gridColumn = c.col;
+          cell.style.gridRow = c.row;
+          cell.innerText = c.nome;
+          gridP.appendChild(cell);
+        });
+      }
+
+      function desenharPeoes() {
+        document.querySelectorAll(".pawn").forEach((el) => el.remove());
+
+        // Desenha Peão Humano
+        const prefixH = humanoNaPista ? "pista" : "ratos";
+        const cellH = document.getElementById(`${prefixH}-cell-${posHumano}`);
+        if (cellH) {
+          const pH = document.createElement("div");
+          pH.className = "pawn humano";
+          pH.innerText = humanoNaPista ? "🏎️" : "🐭";
+          cellH.appendChild(pH);
+        }
+
+        // Desenha Peão Bot
+        const prefixB = botNaPista ? "pista" : "ratos";
+        const cellB = document.getElementById(`${prefixB}-cell-${posBot}`);
+        if (cellB) {
+          const pB = document.createElement("div");
+          pB.className = "pawn bot";
+          pB.innerText = botNaPista ? "🏎️" : "🤖";
+          cellB.appendChild(pB);
+        }
+      }
+
+      async function carregarOpcoesSetup() {
+        const res = await fetch("/setup_opcoes");
+        const data = await res.json();
+
+        const selProf = document.getElementById("select-profissao");
+        selProf.innerHTML = data.profissoes
+          .map(
+            (p) =>
+              `<option value="${p.nome}">${p.nome} (Salário: R$ ${p.salario} | Despesas: R$ ${p.despesas})</option>`,
+          )
+          .join("");
+
+        const selSonho = document.getElementById("select-sonho");
+        selSonho.innerHTML = data.sonhos
+          .map(
+            (s) =>
+              `<option value="${s.titulo}">${s.titulo} (R$ ${s.custo.toLocaleString("pt-BR")})</option>`,
+          )
+          .join("");
+      }
+
+      async function iniciarJogo() {
+        const prof = document.getElementById("select-profissao").value;
+        const sonho = document.getElementById("select-sonho").value;
+
+        const res = await fetch("/iniciar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profissao: prof, sonho: sonho }),
+        });
+        const data = await res.json();
+        document.getElementById("setup-overlay").style.display = "none";
+        renderizarAmbosTabuleiros();
+        atualizarTela(data);
+        desenharPeoes();
+        document.getElementById("log").innerText =
+          "Jogo iniciado! Role o dado para sua primeira jogada.";
+      }
+
+      function abrirSetup() {
+        document.getElementById("setup-overlay").style.display = "flex";
+      }
+
+      async function abrirRanking() {
+        const res = await fetch("/ranking");
+        const data = await res.json();
+        const tbody = document.getElementById("ranking-tbody");
+        if (data.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="5" style="text-align:center; color:#64748b;">Nenhuma vitória salva ainda.</td></tr>';
+        } else {
+          tbody.innerHTML = data
+            .map(
+              (r) => `
+                    <tr>
+                        <td style="color:#facc15; font-weight:bold;">${r.vencedor}</td>
+                        <td>${r.profissao}</td>
+                        <td style="font-weight:bold; color:#38bdf8;">${r.turnos} turnos</td>
+                        <td style="color:#4ade80;">R$ ${Number(r.caixa).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                        <td style="color:#94a3b8; font-size:10px;">${r.data}</td>
+                    </tr>
+                `,
+            )
+            .join("");
+        }
+        document.getElementById("ranking-overlay").style.display = "flex";
+      }
+
+      function fecharRanking() {
+        document.getElementById("ranking-overlay").style.display = "none";
+      }
+
+      function atualizarTela(data) {
+        if (data.humano) {
+          const h = data.humano;
+          posHumano = h.posicao;
+          humanoNaPista = h.na_pista_rapida;
+          document.getElementById("h-nome").innerText = h.nome;
+          document.getElementById("h-prof").innerText = h.profissao;
+          document.getElementById("h-local").innerText = h.na_pista_rapida
+            ? "🏎️ Pista Rápida"
+            : "🐭 Corrida dos Ratos";
+          document.getElementById("h-caixa").innerText = h.caixa.toFixed(2);
+          document.getElementById("h-renda").innerText =
+            h.renda_passiva.toFixed(2);
+          document.getElementById("h-despesas").innerText =
+            h.despesas.toFixed(2);
+          document.getElementById("h-fluxo").innerText =
+            h.fluxo_de_caixa.toFixed(2);
+          document.getElementById("h-divida").innerText =
+            h.emprestimos.toFixed(2);
+          document.getElementById("h-juros").innerText =
+            h.juros_emprestimo.toFixed(2);
+
+          if (h.saiu_da_corrida && !h.na_pista_rapida) {
+            document.getElementById("btn-avancar").style.display = "block";
+          } else {
+            document.getElementById("btn-avancar").style.display = "none";
+          }
+
+          const lista = document.getElementById("assets-list");
+          if (h.ativos && h.ativos.length > 0) {
+            lista.innerHTML = h.ativos
+              .map((a) => {
+                if (a.tipo === "acao") {
+                  return `<div class="asset-item"><span>📈 ${a.quantidade}x ${a.nome}</span><span style="color:#38bdf8;">(Custo: R$ ${a.preco_unitario.toFixed(2)})</span></div>`;
+                }
+                return `<div class="asset-item"><span>🏠 ${a.nome}</span><span style="color:#4ade80;">+R$ ${a.renda.toFixed(2)}/mês</span></div>`;
+              })
+              .join("");
+          } else {
+            lista.innerHTML =
+              '<span style="color: #64748b; font-size: 11px;">Nenhum ativo adquirido ainda.</span>';
+          }
+        }
+
+        if (data.bot) {
+          const b = data.bot;
+          posBot = b.posicao;
+          botNaPista = b.na_pista_rapida;
+          document.getElementById("b-nome").innerText = b.nome;
+          document.getElementById("b-prof").innerText = b.profissao;
+          document.getElementById("b-local").innerText = b.na_pista_rapida
+            ? "🏎️ Pista Rápida"
+            : "🐭 Corrida dos Ratos";
+          document.getElementById("b-caixa").innerText = b.caixa.toFixed(2);
+          document.getElementById("b-renda").innerText =
+            b.renda_passiva.toFixed(2);
+          document.getElementById("b-despesas").innerText =
+            b.despesas.toFixed(2);
+          document.getElementById("b-fluxo").innerText =
+            b.fluxo_de_caixa.toFixed(2);
+        }
+
+        desenharPeoes();
+      }
+
+      function atualizarCalculoAcoes() {
+        const qtd =
+          Number(document.getElementById("input-qtd-acoes").value) || 0;
+        const total = qtd * precoAcaoAtiva;
+        document.getElementById("total-custo-acoes").innerText =
+          total.toFixed(2);
+      }
+
+      async function animarPassos(isHumano, passos, totalCasas) {
+        for (let i = 0; i < passos; i++) {
+          if (isHumano) posHumano = (posHumano + 1) % totalCasas;
+          else posBot = (posBot + 1) % totalCasas;
+          desenharPeoes();
+          somPasso();
+          await sleep(900);
+        }
+      }
+
+      async function fazerJogadaHumano() {
+        const btn = document.getElementById("btn-dado");
+        btn.disabled = true;
+        somDado();
+
+        const res = await fetch("/jogar_humano", { method: "POST" });
+        const data = await res.json();
+        const total = data.humano.na_pista_rapida ? 8 : 12;
+
+        document.getElementById("log").innerHTML =
+          `🎲 Você tirou <strong>${data.movimento.dado}</strong>! Movendo...`;
+        await animarPassos(true, data.movimento.dado, total);
+        atualizarTela(data);
+
+        if (data.movimento.passou_payday) somPayday();
+
+        const modal = document.getElementById("card-modal");
+        const actInvestir = document.getElementById("actions-investir");
+        const actMercado = document.getElementById("actions-mercado");
+        const actBesteira = document.getElementById("actions-besteira");
+        const boxQtdAcoes = document.getElementById("box-qtd-acoes");
+
+        if (
+          data.evento &&
+          (data.evento.tipo === "oportunidade" ||
+            data.evento.tipo === "pista_negocio" ||
+            data.evento.tipo === "sonho")
+        ) {
+          modal.className = "";
+          document.getElementById("card-titulo").innerText = data.evento.titulo;
+          document.getElementById("card-desc").innerText =
+            data.evento.descricao || "Negócio da Pista Rápida.";
+
+          if (data.evento.subtipo === "acao") {
+            precoAcaoAtiva = data.evento.preco_unitario;
+            document.getElementById("card-custo-container").innerHTML =
+              `<strong>Preço por Ação:</strong> R$ <span style="color:#f87171;">${data.evento.preco_unitario.toFixed(2)}</span>`;
+            document.getElementById("card-renda-box").style.display =
+              data.evento.renda > 0 ? "block" : "none";
+            if (data.evento.renda > 0)
+              document.getElementById("card-renda").innerText = Number(
+                data.evento.renda,
+              ).toFixed(2);
+            boxQtdAcoes.style.display = "block";
+            atualizarCalculoAcoes();
+          } else {
+            boxQtdAcoes.style.display = "none";
+            document.getElementById("card-custo-container").innerHTML =
+              `<strong>Custo / Entrada:</strong> R$ <span id="card-custo" style="color:#f87171;">${Number(data.evento.entrada || data.evento.custo).toFixed(2)}</span>`;
+            if (data.evento.renda) {
+              document.getElementById("card-renda-box").style.display = "block";
+              document.getElementById("card-renda").innerText = Number(
+                data.evento.renda,
+              ).toFixed(2);
+            } else {
+              document.getElementById("card-renda-box").style.display = "none";
+            }
+          }
+
+          actInvestir.style.display = "flex";
+          actMercado.style.display = "none";
+          actBesteira.style.display = "none";
+          modal.style.display = "block";
+        } else if (data.evento && data.evento.tipo === "mercado") {
+          boxQtdAcoes.style.display = "none";
+          if (data.evento.possui_ativo) {
+            somPayday();
+            modal.className = "modal-mercado";
+            document.getElementById("card-titulo").innerText =
+              `🏪 Oferta: ${data.evento.titulo}`;
+            document.getElementById("card-desc").innerText =
+              data.evento.descricao;
+            document.getElementById("card-custo-container").innerHTML =
+              `<strong>Oferta de Compra:</strong> R$ <span style="color:#4ade80;">${data.evento.preco_oferta.toFixed(2)}</span>`;
+            document.getElementById("card-renda-box").style.display = "none";
+
+            actInvestir.style.display = "none";
+            actMercado.style.display = "flex";
+            actBesteira.style.display = "none";
+            modal.style.display = "block";
+          } else {
+            modal.style.display = "none";
+            document.getElementById("log").innerHTML =
+              `🏪 Mercado: <em>${data.evento.descricao}</em> (Você não possui este ativo).`;
+            setTimeout(fazerJogadaBot, 1200);
+          }
+        } else if (data.evento && data.evento.tipo === "besteira") {
+          somBesteira();
+          boxQtdAcoes.style.display = "none";
+          modal.className = "modal-besteira";
+          document.getElementById("card-titulo").innerText =
+            `💸 Besteira: ${data.evento.titulo}`;
+          document.getElementById("card-desc").innerText =
+            "Despesa imprevista obrigatória!";
+          document.getElementById("card-custo-container").innerHTML =
+            `<strong>Valor a Pagar:</strong> R$ <span style="color:#f87171;">${Number(data.evento.valor).toFixed(2)}</span>`;
+          document.getElementById("card-renda-box").style.display = "none";
+
+          actInvestir.style.display = "none";
+          actMercado.style.display = "none";
+          actBesteira.style.display = "block";
+          modal.style.display = "block";
+        } else {
+          modal.style.display = "none";
+          if (data.turno_atual === "bot") setTimeout(fazerJogadaBot, 1200);
+        }
+
+        if (data.humano.venceu_jogo) {
+          somVitoria();
+          document.getElementById("log").innerHTML =
+            "👑 <strong>VOCÊ CONQUISTOU SEU SONHO E ENTROU NO HALL DA FAMA!</strong>";
+        }
+      }
+
+      async function comprarAtivo() {
+        const qtd =
+          Number(document.getElementById("input-qtd-acoes").value) || 1;
+        const res = await fetch("/comprar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ quantidade: qtd }),
+        });
+        const data = await res.json();
+        if (!data.sucesso) {
+          alert(data.mensagem);
+          return;
+        }
+        somCompra();
+        document.getElementById("card-modal").style.display = "none";
+        atualizarTela(data);
+        document.getElementById("log").innerHTML = `✅ ${data.mensagem}`;
+
+        if (data.humano.venceu_jogo) {
+          somVitoria();
+          document.getElementById("log").innerHTML =
+            "👑 <strong>VOCÊ CONQUISTOU SEU SONHO E VENCEU O JOGO!</strong>";
+          return;
+        }
+
+        setTimeout(fazerJogadaBot, 1500);
+      }
+
+      async function venderAtivoMercado() {
+        const res = await fetch("/vender_mercado", { method: "POST" });
+        const data = await res.json();
+        somPayday();
+        document.getElementById("card-modal").style.display = "none";
+        atualizarTela(data);
+        document.getElementById("log").innerHTML = `💰 ${data.mensagem}`;
+        setTimeout(fazerJogadaBot, 1400);
+      }
+
+      async function pagarBesteira() {
+        const res = await fetch("/pagar_besteira", { method: "POST" });
+        const data = await res.json();
+        document.getElementById("card-modal").style.display = "none";
+        atualizarTela(data);
+        document.getElementById("log").innerHTML =
+          `<span style="color: #f87171;">${data.mensagem}</span>`;
+        setTimeout(fazerJogadaBot, 1400);
+      }
+
+      async function fazerJogadaBot() {
+        document.getElementById("card-humano").classList.remove("active");
+        document.getElementById("card-bot").classList.add("active");
+        document.getElementById("log").innerHTML = "🤖 Vez da IA Rival...";
+
+        await sleep(1000);
+        somDado();
+
+        const res = await fetch("/jogar_bot", { method: "POST" });
+        const data = await res.json();
+        const total = data.bot.na_pista_rapida ? 8 : 12;
+
+        await animarPassos(false, data.movimento.dado, total);
+        atualizarTela(data);
+
+        document.getElementById("log").innerHTML = data.log_bot;
+
+        if (data.bot.venceu_jogo) {
+          document.getElementById("log").innerHTML +=
+            "<br>💥 <strong>A IA conquistou o sonho dela primeiro e venceu!</strong>";
+          return;
+        }
+
+        document.getElementById("card-bot").classList.remove("active");
+        document.getElementById("card-humano").classList.add("active");
+        document.getElementById("btn-dado").disabled = false;
+      }
+
+      async function passarVez() {
+        const res = await fetch("/passar", { method: "POST" });
+        const data = await res.json();
+        document.getElementById("card-modal").style.display = "none";
+        atualizarTela(data);
+        document.getElementById("log").innerText = "Você passou a vez.";
+        setTimeout(fazerJogadaBot, 1200);
+      }
+
+      async function entrarPistaRapida() {
+        const res = await fetch("/entrar_pista_rapida", { method: "POST" });
+        const data = await res.json();
+        humanoNaPista = true;
+        atualizarTela(data);
+        somVitoria();
+        document.getElementById("log").innerHTML =
+          "🌟 <strong>Você entrou na Pista Rápida!</strong>";
+      }
+
+      async function pegarEmprestimo() {
+        const res = await fetch("/emprestimo", { method: "POST" });
+        const data = await res.json();
+        if (data.sucesso) {
+          somPayday();
+          atualizarTela(data);
+        }
+      }
+
+      async function quitarEmprestimo() {
+        const res = await fetch("/quitar_emprestimo", { method: "POST" });
+        const data = await res.json();
+        if (!data.sucesso) alert(data.mensagem);
+        else {
+          somCompra();
+          atualizarTela(data);
+        }
+      }
+
+      carregarOpcoesSetup();
+    </script>
+  </body>
+</html>
