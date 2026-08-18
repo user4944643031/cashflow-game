@@ -3,7 +3,7 @@ import json
 import asyncio
 from typing import Dict, List, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 from regras import Jogo
 from database import obter_ranking
@@ -78,6 +78,15 @@ class IniciarPartidaRequest(BaseModel):
 def index():
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()
+
+# Rota para carregar o Favicon
+@app.get("/2.png")
+def get_favicon():
+    return FileResponse("2.png")
+
+@app.get("/favicon.ico")
+def get_favicon_ico():
+    return FileResponse("2.png")
 
 @app.get("/setup_opcoes")
 def get_opcoes():
