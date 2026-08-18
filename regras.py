@@ -10,7 +10,7 @@ class CartaOportunidade:
     custo_total: float
     entrada: float
     renda_mensal: float
-    tipo: str = "imovel"  # 'imovel', 'acao', 'negocio', 'cripto'
+    tipo: str = "imovel"
     preco_unitario: float = 0.0
 
 @dataclass
@@ -23,7 +23,7 @@ class CartaBesteira:
 class CartaMercado:
     titulo: str
     descricao: str
-    tipo_alvo: str  # 'imovel', 'acao', 'cripto', 'todos'
+    tipo_alvo: str
     alvo_nome: str
     preco_oferta: float
     fator_multiplicador: float = 1.0
@@ -33,7 +33,7 @@ class CartaPistaRapida:
     titulo: str
     custo: float
     renda_mensal: float
-    tipo: str  # 'negocio', 'sonho'
+    tipo: str
 
 @dataclass
 class Ativo:
@@ -160,7 +160,6 @@ class Jogo:
             {"id": 6, "tipo": "Sonho"}, {"id": 7, "tipo": "Negócio Rápido"}
         ]
 
-        # Baralho Expandido de Oportunidades
         self.baralho_oportunidades = [
             CartaOportunidade("Casa 2 Quartos", "Imóvel financiado com aluguel mensal fixo.", 60000, 1000, 300, tipo="imovel"),
             CartaOportunidade("Apartamento Studio", "Ótima localização para locação por temporada.", 90000, 1500, 450, tipo="imovel"),
@@ -174,7 +173,6 @@ class Jogo:
             CartaOportunidade("Criptoativo BTC-Node", "Cotas digitais de alta valorização (R$ 25 cada).", 0, 500, 0, tipo="cripto", preco_unitario=25.0)
         ]
 
-        # Baralho Expandido de Mercado
         self.baralho_mercado = [
             CartaMercado("Boom em Studios", "Fundo Imobiliário adquire Studios por R$ 4.500 cada!", "imovel", "Apartamento Studio", 4500.0),
             CartaMercado("Comprador de Casa 2 Quartos", "Família faz proposta irresistível: R$ 3.500 pela sua casa!", "imovel", "Casa 2 Quartos", 3500.0),
@@ -185,7 +183,6 @@ class Jogo:
             CartaMercado("Venda de Cafeteria", "Grupo de investimentos compra sua cafeteria por R$ 12.000!", "imovel", "Franquia de Cafeteria", 12000.0)
         ]
 
-        # Baralho Expandido de Besteiras
         self.baralho_besteiras = [
             CartaBesteira("Smartphone Top de Linha", 1200, "Lançamento imperdível com câmera de última geração."),
             CartaBesteira("Jantar de Luxo e Comemoração", 450, "Festa em restaurante renomado."),
@@ -195,7 +192,6 @@ class Jogo:
             CartaBesteira("Viagem de Fim de Semana", 950, "Passagens de última hora para a praia.")
         ]
 
-        # Baralho Expandido de Pista Rápida
         self.baralho_rapido_negocios = [
             CartaPistaRapida("Franquia de Fast Food", 100000, 10000, 'negocio'),
             CartaPistaRapida("Shopping Center Regional", 350000, 30000, 'negocio'),
@@ -372,6 +368,35 @@ class Jogo:
         self.avancar_turno()
         estado = self.obter_estado_geral()
         estado.update({"movimento": mov, "log_bot": log_bot})
+        return estado
+
+    def forcar_timeout_atual(self) -> dict:
+        """Executa automaticamente a jogada caso o tempo de 30s esgote."""
+        j = self.jogador_atual
+        if self.evento_atual or self.carta_ativa:
+            if isinstance(self.carta_ativa, CartaBesteira):
+                return self.pagar_besteira_atual()
+            else:
+                return self.passar_atual()
+        
+        # Se ainda nem tinha rolado o dado:
+        mov = self.mover_jogador(j)
+        self.total_turnos += 1
+        log_msg = f"⏱️ Tempo de {j.nome} esgotou! Jogou automaticamente: tirou {mov['dado']} ({mov['casa_atual']})."
+
+        if not j.na_pista_rapida and mov["casa_atual"] == "Besteira":
+            besteira = random.choice(self.baralho_besteiras)
+            if j.caixa < besteira.valor:
+                falta = besteira.valor - j.caixa
+                emp = (int(falta // 1000) + 1) * 1000
+                j.caixa += emp
+                j.emprestimos += emp
+            j.caixa -= besteira.valor
+            log_msg += f" Pagou despesa de R$ {besteira.valor:.2f}."
+
+        self.avancar_turno()
+        estado = self.obter_estado_geral()
+        estado.update({"movimento": mov, "mensagem": log_msg, "timeout": True})
         return estado
 
     def comprar_atual(self, quantidade: int = 1) -> dict:
