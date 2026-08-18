@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Dict
 import random
 from database import salvar_partida
 
@@ -44,15 +44,18 @@ class Ativo:
 
 @dataclass
 class Jogador:
+    id: int
     nome: str
     profissao: str
     salario: float
     despesas_fixas: float
     caixa: float
-    sonho_titulo: str = ""
-    sonho_custo: float = 0.0
+    sonho_titulo: str
+    sonho_custo: float
+    is_bot: bool
+    cor: str
+    icone: str
     posicao: int = 0
-    is_bot: bool = False
     ativos: List[Ativo] = field(default_factory=list)
     emprestimos: float = 0.0
     na_pista_rapida: bool = False
@@ -84,6 +87,7 @@ class Jogador:
 
     def serializar(self) -> dict:
         return {
+            "id": self.id,
             "nome": self.nome,
             "profissao": self.profissao,
             "salario": self.salario,
@@ -100,6 +104,8 @@ class Jogador:
             "saiu_da_corrida": self.saiu_da_corrida(),
             "venceu_jogo": self.venceu_jogo,
             "is_bot": self.is_bot,
+            "cor": self.cor,
+            "icone": self.icone,
             "ativos": [
                 {
                     "nome": a.nome,
@@ -126,6 +132,13 @@ class Jogo:
         {"titulo": "Viagem Espacial Orbital", "custo": 250000.0},
         {"titulo": "Mansão com Heliponto", "custo": 300000.0},
         {"titulo": "Fundação Beneficente Global", "custo": 200000.0}
+    ]
+
+    CORES_ICONES = [
+        {"cor": "#facc15", "icone": "🐭"},
+        {"cor": "#38bdf8", "icone": "🤖"},
+        {"cor": "#4ade80", "icone": "🐱"},
+        {"cor": "#c084fc", "icone": "🦊"}
     ]
 
     def __init__(self):
@@ -174,44 +187,56 @@ class Jogo:
             CartaPistaRapida("Rede de Farmácias", 150000, 14000, 'negocio')
         ]
 
-        self.jogador_humano: Optional[Jogador] = None
-        self.jogador_bot: Optional[Jogador] = None
+        self.jogadores: List[Jogador] = []
+        self.indice_atual: int = 0
         self.carta_ativa = None
-        self.turno_atual: str = "humano"
         self.partida_iniciada: bool = False
         self.total_turnos: int = 0
 
-    def iniciar_partida(self, profissao_nome: str, sonho_titulo: str):
-        prof_h = next((p for p in self.PROFISSOES if p["nome"] == profissao_nome), self.PROFISSOES[1])
-        sonho_h = next((s for s in self.SONHOS if s["titulo"] == sonho_titulo), self.SONHOS[0])
-        self.jogador_humano = Jogador(
-            nome="Você (Humano)", profissao=prof_h["nome"], salario=prof_h["salario"],
-            despesas_fixas=prof_h["despesas"], caixa=prof_h["caixa"],
-            sonho_titulo=sonho_h["titulo"], sonho_custo=sonho_h["custo"], is_bot=False
-        )
+    @property
+    def jogador_atual(self) -> Optional[Jogador]:
+        if not self.jogadores:
+            return None
+        return self.jogadores[self.indice_atual]
 
-        profs_bot = [p for p in self.PROFISSOES if p["nome"] != prof_h["nome"]]
-        prof_b = random.choice(profs_bot)
-        sonhos_bot = [s for s in self.SONHOS if s["titulo"] != sonho_h["titulo"]]
-        sonho_b = random.choice(sonhos_bot)
-        self.jogador_bot = Jogador(
-            nome="IA Rival", profissao=prof_b["nome"], salario=prof_b["salario"],
-            despesas_fixas=prof_b["despesas"], caixa=prof_b["caixa"],
-            sonho_titulo=sonho_b["titulo"], sonho_custo=sonho_b["custo"], is_bot=True
-        )
+    def iniciar_partida(self, configs_jogadores: List[dict]):
+        self.jogadores = []
+        for i, cfg in enumerate(configs_jogadores):
+            prof = next((p for p in self.PROFISSOES if p["nome"] == cfg["profissao"]), self.PROFISSOES[0])
+            sonho = next((s for s in self.SONHOS if s["titulo"] == cfg["sonho"]), self.SONHOS[0])
+            visual = self.CORES_ICONES[i % len(self.CORES_ICONES)]
+            
+            self.jogadores.append(Jogador(
+                id=i,
+                nome=cfg.get("nome", f"Jogador {i+1}"),
+                profissao=prof["nome"],
+                salario=prof["salario"],
+                despesas_fixas=prof["despesas"],
+                caixa=prof["caixa"],
+                sonho_titulo=sonho["titulo"],
+                sonho_custo=sonho["custo"],
+                is_bot=cfg.get("is_bot", False),
+                cor=visual["cor"],
+                icone=visual["icone"]
+            ))
 
-        self.turno_atual = "humano"
+        self.indice_atual = 0
         self.partida_iniciada = True
         self.carta_ativa = None
         self.total_turnos = 0
 
+    def avancar_turno(self):
+        self.carta_ativa = None
+        self.indice_atual = (self.indice_atual + 1) % len(self.jogadores)
+
     def obter_estado_geral(self) -> dict:
         return {
             "partida_iniciada": self.partida_iniciada,
-            "turno_atual": self.turno_atual,
+            "indice_atual": self.indice_atual,
             "total_turnos": self.total_turnos,
-            "humano": self.jogador_humano.serializar() if self.jogador_humano else None,
-            "bot": self.jogador_bot.serializar() if self.jogador_bot else None
+            "jogador_atual_id": self.jogador_atual.id if self.jogador_atual else None,
+            "is_bot_atual": self.jogador_atual.is_bot if self.jogador_atual else False,
+            "jogadores": [j.serializar() for j in self.jogadores]
         }
 
     def mover_jogador(self, jogador: Jogador) -> dict:
@@ -229,8 +254,8 @@ class Jogo:
         return {"dado": dado, "nova_pos": nova_pos, "casa_atual": casa_atual, "passou_payday": passou_payday}
 
     def jogar_turno_humano(self) -> dict:
+        j = self.jogador_atual
         self.total_turnos += 1
-        j = self.jogador_humano
         mov = self.mover_jogador(j)
         self.carta_ativa = None
         evento = {}
@@ -253,12 +278,12 @@ class Jogo:
                     "preco_oferta": self.carta_ativa.preco_oferta, "possui_ativo": possui_ativo
                 }
                 if not possui_ativo:
-                    self.turno_atual = "bot"
+                    self.avancar_turno()
             elif mov["casa_atual"] == "Besteira":
                 self.carta_ativa = random.choice(self.baralho_besteiras)
                 evento = {"tipo": "besteira", "titulo": self.carta_ativa.titulo, "valor": self.carta_ativa.valor}
             elif mov["casa_atual"] == "Payday":
-                self.turno_atual = "bot"
+                self.avancar_turno()
         else:
             if mov["casa_atual"] == "Negócio Rápido":
                 self.carta_ativa = random.choice(self.baralho_rapido_negocios)
@@ -267,114 +292,16 @@ class Jogo:
                 self.carta_ativa = CartaPistaRapida(j.sonho_titulo, j.sonho_custo, 0, 'sonho')
                 evento = {"tipo": "sonho", "titulo": j.sonho_titulo, "custo": j.sonho_custo}
             else:
-                self.turno_atual = "bot"
+                self.avancar_turno()
 
         estado = self.obter_estado_geral()
         estado.update({"movimento": mov, "evento": evento})
         return estado
 
-    def pagar_besteira_humano(self) -> dict:
-        j = self.jogador_humano
-        if not self.carta_ativa or not isinstance(self.carta_ativa, CartaBesteira):
-            return {"sucesso": False, "mensagem": "Nenhuma despesa ativa."}
-
-        valor = self.carta_ativa.valor
-        titulo = self.carta_ativa.titulo
-
-        if j.caixa < valor:
-            falta = valor - j.caixa
-            emp = (int(falta // 1000) + 1) * 1000
-            j.caixa += emp
-            j.emprestimos += emp
-
-        j.caixa -= valor
-        self.carta_ativa = None
-        self.turno_atual = "bot"
-
-        estado = self.obter_estado_geral()
-        estado.update({"sucesso": True, "mensagem": f"💸 Você pagou R$ {valor:.2f} por: {titulo}."})
-        return estado
-
-    def vender_ativo_mercado_humano(self) -> dict:
-        j = self.jogador_humano
-        if not self.carta_ativa or not isinstance(self.carta_ativa, CartaMercado):
-            return {"sucesso": False, "mensagem": "Nenhuma oferta ativa."}
-
-        alvo = next((a for a in j.ativos if a.nome == self.carta_ativa.alvo_nome), None)
-        if not alvo:
-            return {"sucesso": False, "mensagem": "Você não possui este ativo."}
-
-        if alvo.tipo == "acao":
-            valor_total = alvo.quantidade * self.carta_ativa.preco_oferta
-            j.caixa += valor_total
-            j.ativos.remove(alvo)
-            msg = f"Você vendeu {alvo.quantidade} cotas de {alvo.nome} por R$ {valor_total:.2f}!"
-        else:
-            valor_total = self.carta_ativa.preco_oferta
-            j.caixa += valor_total
-            j.ativos.remove(alvo)
-            msg = f"Você vendeu {alvo.nome} por R$ {valor_total:.2f}!"
-
-        self.carta_ativa = None
-        self.turno_atual = "bot"
-        estado = self.obter_estado_geral()
-        estado.update({"sucesso": True, "mensagem": msg})
-        return estado
-
-    def comprar_humano(self, quantidade: int = 1) -> dict:
-        j = self.jogador_humano
-        if not self.carta_ativa:
-            return {"sucesso": False, "mensagem": "Nenhuma carta ativa."}
-
-        if isinstance(self.carta_ativa, CartaOportunidade):
-            if self.carta_ativa.tipo == "acao":
-                custo_total = self.carta_ativa.preco_unitario * quantidade
-                if j.caixa < custo_total:
-                    return {"sucesso": False, "mensagem": f"Caixa insuficiente para comprar {quantidade} ações!"}
-                
-                j.caixa -= custo_total
-                ativo_existente = next((a for a in j.ativos if a.nome == self.carta_ativa.titulo), None)
-                if ativo_existente:
-                    ativo_existente.quantidade += quantidade
-                else:
-                    j.ativos.append(Ativo(
-                        nome=self.carta_ativa.titulo, entrada=custo_total, renda_mensal=self.carta_ativa.renda_mensal,
-                        tipo="acao", quantidade=quantidade, preco_compra_unitario=self.carta_ativa.preco_unitario
-                    ))
-                msg = f"Você comprou {quantidade} cotas de {self.carta_ativa.titulo}!"
-            else:
-                if j.caixa < self.carta_ativa.entrada:
-                    return {"sucesso": False, "mensagem": "Caixa insuficiente para a entrada!"}
-                j.caixa -= self.carta_ativa.entrada
-                j.ativos.append(Ativo(self.carta_ativa.titulo, self.carta_ativa.entrada, self.carta_ativa.renda_mensal, tipo="imovel"))
-                msg = f"Você comprou: {self.carta_ativa.titulo}!"
-
-        elif isinstance(self.carta_ativa, CartaPistaRapida):
-            if j.caixa < self.carta_ativa.custo:
-                return {"sucesso": False, "mensagem": "Caixa insuficiente!"}
-            j.caixa -= self.carta_ativa.custo
-            if self.carta_ativa.tipo == 'negocio':
-                j.renda_pista_rapida += self.carta_ativa.renda_mensal
-            elif self.carta_ativa.tipo == 'sonho':
-                j.venceu_jogo = True
-                salvar_partida(j.nome, j.profissao, j.sonho_titulo, j.renda_passiva, j.caixa, self.total_turnos)
-            msg = f"Você adquiriu: {self.carta_ativa.titulo}!"
-
-        self.carta_ativa = None
-        self.turno_atual = "bot"
-        estado = self.obter_estado_geral()
-        estado.update({"sucesso": True, "mensagem": msg})
-        return estado
-
-    def passar_humano(self) -> dict:
-        self.carta_ativa = None
-        self.turno_atual = "bot"
-        return self.obter_estado_geral()
-
     def executar_turno_bot(self) -> dict:
-        b = self.jogador_bot
-        
-        # IA entra na Pista Rápida assim que puder
+        b = self.jogador_atual
+        self.total_turnos += 1
+
         if b.saiu_da_corrida() and not b.na_pista_rapida:
             b.na_pista_rapida = True
             b.posicao = 0
@@ -383,7 +310,7 @@ class Jogo:
 
         mov = self.mover_jogador(b)
         trilha_nome = "Pista Rápida" if b.na_pista_rapida else "Corrida dos Ratos"
-        log_bot = f"🤖 IA tirou {mov['dado']} na {trilha_nome} e parou em <strong>{mov['casa_atual']}</strong>."
+        log_bot = f"{b.icone} {b.nome} tirou {mov['dado']} e parou em <strong>{mov['casa_atual']}</strong> ({trilha_nome})."
 
         if not b.na_pista_rapida:
             if mov["casa_atual"] == "Oportunidade":
@@ -423,37 +350,131 @@ class Jogo:
                 if b.caixa >= carta.custo:
                     b.caixa -= carta.custo
                     b.renda_pista_rapida += carta.renda_mensal
-                    log_bot += f" Adquiriu grande negócio: {carta.titulo}!"
+                    log_bot += f" Adquiriu {carta.titulo}!"
             elif mov["casa_atual"] == "Sonho":
                 if b.caixa >= b.sonho_custo:
                     b.caixa -= b.sonho_custo
                     b.venceu_jogo = True
                     salvar_partida(b.nome, b.profissao, b.sonho_titulo, b.renda_passiva, b.caixa, self.total_turnos)
-                    log_bot += f" 👑 A IA COMPROU O SONHO DELA ({b.sonho_titulo}) E VENCEU!"
+                    log_bot += f" 👑 {b.nome} COMPROU O SONHO ({b.sonho_titulo}) E VENCEU O JOGO!"
 
-        self.turno_atual = "humano"
+        self.avancar_turno()
         estado = self.obter_estado_geral()
         estado.update({"movimento": mov, "log_bot": log_bot})
         return estado
 
-    def entrar_pista_rapida_humano(self) -> dict:
-        j = self.jogador_humano
+    def comprar_atual(self, quantidade: int = 1) -> dict:
+        j = self.jogador_atual
+        if not self.carta_ativa:
+            return {"sucesso": False, "mensagem": "Nenhuma carta ativa."}
+
+        if isinstance(self.carta_ativa, CartaOportunidade):
+            if self.carta_ativa.tipo == "acao":
+                custo_total = self.carta_ativa.preco_unitario * quantidade
+                if j.caixa < custo_total:
+                    return {"sucesso": False, "mensagem": f"Caixa insuficiente para comprar {quantidade} ações!"}
+                
+                j.caixa -= custo_total
+                ativo_existente = next((a for a in j.ativos if a.nome == self.carta_ativa.titulo), None)
+                if ativo_existente:
+                    ativo_existente.quantidade += quantidade
+                else:
+                    j.ativos.append(Ativo(
+                        nome=self.carta_ativa.titulo, entrada=custo_total, renda_mensal=self.carta_ativa.renda_mensal,
+                        tipo="acao", quantidade=quantidade, preco_compra_unitario=self.carta_ativa.preco_unitario
+                    ))
+                msg = f"{j.nome} comprou {quantidade} cotas de {self.carta_ativa.titulo}!"
+            else:
+                if j.caixa < self.carta_ativa.entrada:
+                    return {"sucesso": False, "mensagem": "Caixa insuficiente para a entrada!"}
+                j.caixa -= self.carta_ativa.entrada
+                j.ativos.append(Ativo(self.carta_ativa.titulo, self.carta_ativa.entrada, self.carta_ativa.renda_mensal, tipo="imovel"))
+                msg = f"{j.nome} comprou: {self.carta_ativa.titulo}!"
+
+        elif isinstance(self.carta_ativa, CartaPistaRapida):
+            if j.caixa < self.carta_ativa.custo:
+                return {"sucesso": False, "mensagem": "Caixa insuficiente!"}
+            j.caixa -= self.carta_ativa.custo
+            if self.carta_ativa.tipo == 'negocio':
+                j.renda_pista_rapida += self.carta_ativa.renda_mensal
+            elif self.carta_ativa.tipo == 'sonho':
+                j.venceu_jogo = True
+                salvar_partida(j.nome, j.profissao, j.sonho_titulo, j.renda_passiva, j.caixa, self.total_turnos)
+            msg = f"{j.nome} adquiriu: {self.carta_ativa.titulo}!"
+
+        self.avancar_turno()
+        estado = self.obter_estado_geral()
+        estado.update({"sucesso": True, "mensagem": msg})
+        return estado
+
+    def pagar_besteira_atual(self) -> dict:
+        j = self.jogador_atual
+        if not self.carta_ativa or not isinstance(self.carta_ativa, CartaBesteira):
+            return {"sucesso": False, "mensagem": "Nenhuma despesa ativa."}
+
+        valor = self.carta_ativa.valor
+        titulo = self.carta_ativa.titulo
+
+        if j.caixa < valor:
+            falta = valor - j.caixa
+            emp = (int(falta // 1000) + 1) * 1000
+            j.caixa += emp
+            j.emprestimos += emp
+
+        j.caixa -= valor
+        self.avancar_turno()
+
+        estado = self.obter_estado_geral()
+        estado.update({"sucesso": True, "mensagem": f"💸 {j.nome} pagou R$ {valor:.2f} por: {titulo}."})
+        return estado
+
+    def vender_ativo_mercado_atual(self) -> dict:
+        j = self.jogador_atual
+        if not self.carta_ativa or not isinstance(self.carta_ativa, CartaMercado):
+            return {"sucesso": False, "mensagem": "Nenhuma oferta ativa."}
+
+        alvo = next((a for a in j.ativos if a.nome == self.carta_ativa.alvo_nome), None)
+        if not alvo:
+            return {"sucesso": False, "mensagem": "Você não possui este ativo."}
+
+        if alvo.tipo == "acao":
+            valor_total = alvo.quantidade * self.carta_ativa.preco_oferta
+            j.caixa += valor_total
+            j.ativos.remove(alvo)
+            msg = f"{j.nome} vendeu {alvo.quantidade} cotas de {alvo.nome} por R$ {valor_total:.2f}!"
+        else:
+            valor_total = self.carta_ativa.preco_oferta
+            j.caixa += valor_total
+            j.ativos.remove(alvo)
+            msg = f"{j.nome} vendeu {alvo.nome} por R$ {valor_total:.2f}!"
+
+        self.avancar_turno()
+        estado = self.obter_estado_geral()
+        estado.update({"sucesso": True, "mensagem": msg})
+        return estado
+
+    def passar_atual(self) -> dict:
+        self.avancar_turno()
+        return self.obter_estado_geral()
+
+    def entrar_pista_rapida_atual(self) -> dict:
+        j = self.jogador_atual
         j.na_pista_rapida = True
         j.posicao = 0
         j.renda_pista_rapida = j.renda_passiva * 10
         j.caixa += j.renda_pista_rapida
         return self.obter_estado_geral()
 
-    def emprestimo_humano(self) -> dict:
-        j = self.jogador_humano
+    def emprestimo_atual(self) -> dict:
+        j = self.jogador_atual
         j.caixa += 1000.0
         j.emprestimos += 1000.0
         estado = self.obter_estado_geral()
         estado.update({"sucesso": True, "mensagem": "Empréstimo de R$ 1.000 concedido."})
         return estado
 
-    def quitar_emprestimo_humano(self) -> dict:
-        j = self.jogador_humano
+    def quitar_emprestimo_atual(self) -> dict:
+        j = self.jogador_atual
         if j.emprestimos < 1000.0:
             return {"sucesso": False, "mensagem": "Sem dívidas para quitar."}
         if j.caixa < 1000.0:

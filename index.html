@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cashflow Game - Edição Pro</title>
+    <title>Cashflow Game - Multiplayer</title>
     <style>
       * {
         box-sizing: border-box;
@@ -38,7 +38,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(9, 13, 22, 0.95);
+        background: rgba(9, 13, 22, 0.96);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -50,7 +50,9 @@
         border-radius: 16px;
         padding: 24px;
         width: 100%;
-        max-width: 520px;
+        max-width: 620px;
+        max-height: 90vh;
+        overflow-y: auto;
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
       }
       .modal-card h2 {
@@ -59,28 +61,46 @@
         margin-bottom: 8px;
         text-align: center;
       }
-      .form-group {
-        margin-bottom: 14px;
+
+      .slot-player {
+        background: #0b1329;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      .slot-player h4 {
+        font-size: 13px;
+        margin-bottom: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .slot-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
       }
       .form-group label {
         display: block;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: bold;
         text-transform: uppercase;
         color: #cbd5e1;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
       }
       .form-group select,
       .form-group input {
         width: 100%;
-        background: #0b1329;
+        background: #131d2e;
         color: #f8fafc;
         border: 1px solid #334155;
-        padding: 10px;
-        border-radius: 8px;
-        font-size: 14px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 12px;
         outline: none;
       }
+
       .btn-start {
         background: #2563eb;
         color: white;
@@ -91,6 +111,7 @@
         font-weight: bold;
         width: 100%;
         cursor: pointer;
+        margin-top: 10px;
       }
       .btn-start:hover {
         background: #1d4ed8;
@@ -117,29 +138,23 @@
       .game-wrapper {
         display: flex;
         gap: 20px;
-        max-width: 1160px;
+        max-width: 1180px;
         width: 100%;
         flex-wrap: wrap;
         justify-content: center;
       }
 
-      /* Coluna dos Dois Tabuleiros */
       .boards-column {
         display: flex;
         flex-direction: column;
         gap: 14px;
         width: 440px;
       }
-
       .board-box {
         background: #131d2e;
         border: 1px solid #1e293b;
         border-radius: 14px;
         padding: 12px;
-      }
-      .board-box.destaque-pista {
-        border-color: #eab308;
-        box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
       }
       .board-top {
         display: flex;
@@ -169,7 +184,6 @@
         background: #475569;
       }
 
-      /* Grid Tabuleiro Ratos (4x4) */
       .grid-ratos {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -178,8 +192,6 @@
         width: 410px;
         height: 260px;
       }
-
-      /* Grid Tabuleiro Pista Rápida (4x2 em anel) */
       .grid-pista {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -243,66 +255,65 @@
         font-weight: bold;
       }
 
-      .pawn {
+      /* Container de Peões Múltiplos */
+      .pawns-holder {
         position: absolute;
-        font-size: 14px;
+        top: -6px;
+        left: -6px;
+        display: flex;
+        gap: 2px;
+        z-index: 10;
+      }
+      .pawn {
+        font-size: 13px;
         border-radius: 50%;
-        width: 22px;
-        height: 22px;
+        width: 20px;
+        height: 20px;
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 10;
-      }
-      .pawn.humano {
-        top: -6px;
-        left: -4px;
-        background: #facc15;
-        box-shadow: 0 0 8px #facc15;
-      }
-      .pawn.bot {
-        bottom: -6px;
-        right: -4px;
-        background: #38bdf8;
-        box-shadow: 0 0 8px #38bdf8;
+        box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
       }
 
       .sidebar {
         background: #131d2e;
         border: 1px solid #1e293b;
         border-radius: 16px;
-        padding: 18px;
-        width: 560px;
+        padding: 16px;
+        width: 600px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
       }
 
-      .players-comparison {
+      /* Grid de 2 a 4 jogadores */
+      .players-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 10px;
         margin-bottom: 10px;
       }
       .player-card {
         background: #0b1329;
-        border: 1px solid #1e293b;
+        border: 2px solid #1e293b;
         border-radius: 10px;
-        padding: 10px;
-        font-size: 12px;
+        padding: 8px 10px;
+        font-size: 11px;
+        transition: 0.2s;
       }
       .player-card.active {
-        border-color: #38bdf8;
-        box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+        border-color: #facc15;
+        box-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
       }
       .player-card h3 {
-        font-size: 13px;
-        margin-bottom: 6px;
+        font-size: 12px;
+        margin-bottom: 4px;
+        display: flex;
+        justify-content: space-between;
       }
       .player-card p {
-        margin-bottom: 3px;
+        margin-bottom: 2px;
         color: #cbd5e1;
-        font-size: 11px;
       }
 
       .bank-box {
@@ -316,7 +327,7 @@
         align-items: center;
       }
       .btn-bank {
-        padding: 5px 8px;
+        padding: 4px 8px;
         border-radius: 5px;
         border: none;
         font-size: 11px;
@@ -337,7 +348,7 @@
         border-radius: 8px;
         padding: 8px 12px;
         margin-bottom: 10px;
-        max-height: 80px;
+        max-height: 70px;
         overflow-y: auto;
         text-align: left;
       }
@@ -380,8 +391,8 @@
         background: #eab308;
         color: #000;
         border: none;
-        padding: 12px;
-        font-size: 14px;
+        padding: 10px;
+        font-size: 13px;
         font-weight: bold;
         border-radius: 8px;
         cursor: pointer;
@@ -395,7 +406,7 @@
         background: #0b1329;
         border: 2px solid #38bdf8;
         border-radius: 8px;
-        padding: 14px;
+        padding: 12px;
         text-align: left;
         margin-bottom: 10px;
       }
@@ -407,8 +418,8 @@
       }
       #card-modal h3 {
         color: #facc15;
-        font-size: 14px;
-        margin-bottom: 6px;
+        font-size: 13px;
+        margin-bottom: 4px;
       }
       #card-modal.modal-besteira h3 {
         color: #f87171;
@@ -417,48 +428,48 @@
         color: #c084fc;
       }
       #card-modal p {
-        font-size: 12px;
+        font-size: 11px;
         color: #cbd5e1;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
       }
 
       .card-actions {
         display: flex;
         gap: 8px;
-        margin-top: 10px;
+        margin-top: 8px;
       }
       .btn-comprar {
         background: #16a34a;
         color: white;
         border: none;
-        padding: 8px;
-        border-radius: 6px;
+        padding: 6px;
+        border-radius: 5px;
         font-weight: bold;
         cursor: pointer;
         flex: 1;
-        font-size: 12px;
+        font-size: 11px;
       }
       .btn-vender {
         background: #a855f7;
         color: white;
         border: none;
-        padding: 8px;
-        border-radius: 6px;
+        padding: 6px;
+        border-radius: 5px;
         font-weight: bold;
         cursor: pointer;
         flex: 1;
-        font-size: 12px;
+        font-size: 11px;
       }
       .btn-passar {
         background: #475569;
         color: white;
         border: none;
-        padding: 8px;
-        border-radius: 6px;
+        padding: 6px;
+        border-radius: 5px;
         font-weight: bold;
         cursor: pointer;
         flex: 1;
-        font-size: 12px;
+        font-size: 11px;
       }
       .btn-pagar-despesa {
         background: #ef4444;
@@ -469,45 +480,69 @@
         font-weight: bold;
         cursor: pointer;
         width: 100%;
-        font-size: 13px;
+        font-size: 12px;
       }
 
       #log {
-        padding: 10px;
+        padding: 8px;
         background: #0b1329;
         border-radius: 8px;
         font-size: 12px;
         color: #e2e8f0;
         border: 1px dashed #334155;
         text-align: center;
-        min-height: 44px;
-        line-height: 1.4;
+        min-height: 40px;
+        line-height: 1.3;
       }
     </style>
   </head>
   <body>
     <canvas id="confetti-canvas"></canvas>
 
+    <!-- Overlay Setup Multiplayer -->
     <div class="overlay" id="setup-overlay">
       <div class="modal-card">
-        <h2>🎯 Novo Jogo - Escolha seu Personagem</h2>
-        <div class="form-group">
-          <label>Profissão</label>
-          <select id="select-profissao"></select>
+        <h2>👥 Configurar Partida Multiplayer</h2>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+          "
+        >
+          <label style="font-size: 12px; font-weight: bold"
+            >Número de Jogadores:</label
+          >
+          <select
+            id="num-jogadores"
+            style="
+              background: #0b1329;
+              color: #fff;
+              border: 1px solid #334155;
+              padding: 4px 8px;
+              border-radius: 6px;
+            "
+            onchange="renderizarSlotsSetup()"
+          >
+            <option value="2">2 Jogadores</option>
+            <option value="3">3 Jogadores</option>
+            <option value="4" selected>4 Jogadores</option>
+          </select>
         </div>
-        <div class="form-group">
-          <label>Sonho da Pista Rápida</label>
-          <select id="select-sonho"></select>
-        </div>
-        <button class="btn-start" onclick="iniciarJogo()">
-          Começar Partida
+
+        <div id="slots-container"></div>
+
+        <button class="btn-start" onclick="iniciarMultiplayer()">
+          Iniciar Partida
         </button>
       </div>
     </div>
 
+    <!-- Overlay Ranking -->
     <div class="overlay" id="ranking-overlay" style="display: none">
       <div class="modal-card">
-        <h2>🏆 Hall da Fama (Melhores Partidas)</h2>
+        <h2>🏆 Hall da Fama</h2>
         <div style="max-height: 250px; overflow-y: auto">
           <table class="rank-table">
             <thead>
@@ -534,8 +569,7 @@
 
     <div class="game-wrapper">
       <div class="boards-column">
-        <!-- Tabuleiro 1: Corrida dos Ratos -->
-        <div class="board-box" id="box-ratos">
+        <div class="board-box">
           <div class="board-top">
             <div class="board-header" style="color: #38bdf8">
               🐭 Corrida dos Ratos
@@ -552,8 +586,7 @@
           <div class="grid-ratos" id="grid-ratos"></div>
         </div>
 
-        <!-- Tabuleiro 2: Pista Rápida (Fast Track) -->
-        <div class="board-box" id="box-pista">
+        <div class="board-box">
           <div class="board-top">
             <div class="board-header" style="color: #facc15">
               🏎️ Pista Rápida (Fast Track)
@@ -565,67 +598,14 @@
 
       <div class="sidebar">
         <div>
-          <div class="players-comparison">
-            <div class="player-card active" id="card-humano">
-              <h3 style="color: #facc15">🐭 <span id="h-nome">Você</span></h3>
-              <p><strong>Profissão:</strong> <span id="h-prof">-</span></p>
-              <p>
-                <strong>Local:</strong>
-                <span id="h-local" style="font-weight: bold; color: #38bdf8"
-                  >Corrida dos Ratos</span
-                >
-              </p>
-              <p>
-                <strong>Caixa:</strong> R$
-                <span id="h-caixa" style="color: #4ade80">0.00</span>
-              </p>
-              <p>
-                <strong>Renda Passiva:</strong> R$
-                <span id="h-renda" style="color: #38bdf8">0.00</span>
-              </p>
-              <p>
-                <strong>Despesas:</strong> R$
-                <span id="h-despesas" style="color: #f87171">0.00</span>
-              </p>
-              <p>
-                <strong>Fluxo Mensal:</strong> R$ <span id="h-fluxo">0.00</span>
-              </p>
-            </div>
-
-            <div class="player-card" id="card-bot">
-              <h3 style="color: #38bdf8">
-                🤖 <span id="b-nome">IA Rival</span>
-              </h3>
-              <p><strong>Profissão:</strong> <span id="b-prof">-</span></p>
-              <p>
-                <strong>Local:</strong>
-                <span id="b-local" style="font-weight: bold; color: #38bdf8"
-                  >Corrida dos Ratos</span
-                >
-              </p>
-              <p>
-                <strong>Caixa:</strong> R$
-                <span id="b-caixa" style="color: #4ade80">0.00</span>
-              </p>
-              <p>
-                <strong>Renda Passiva:</strong> R$
-                <span id="b-renda" style="color: #38bdf8">0.00</span>
-              </p>
-              <p>
-                <strong>Despesas:</strong> R$
-                <span id="b-despesas" style="color: #f87171">0.00</span>
-              </p>
-              <p>
-                <strong>Fluxo Mensal:</strong> R$ <span id="b-fluxo">0.00</span>
-              </p>
-            </div>
-          </div>
+          <!-- Grid de Jogadores -->
+          <div class="players-grid" id="players-grid"></div>
 
           <div class="bank-box" id="bank-panel">
             <div style="font-size: 11px">
-              <strong>Empréstimo:</strong> R$
-              <span id="h-divida">0.00</span> (Juros: R$
-              <span id="h-juros">0.00</span>/mês)
+              <strong id="label-banco-jogador">Empréstimo:</strong> R$
+              <span id="cur-divida">0.00</span> (Juros: R$
+              <span id="cur-juros">0.00</span>/mês)
             </div>
             <div>
               <button class="btn-bank add" onclick="pegarEmprestimo()">
@@ -638,7 +618,7 @@
           </div>
 
           <div class="assets-box">
-            <h4>Meus Ativos & Investimentos</h4>
+            <h4 id="label-ativos-jogador">Ativos do Jogador Atual</h4>
             <div id="assets-list">
               <span style="color: #64748b; font-size: 11px"
                 >Nenhum ativo adquirido ainda.</span
@@ -646,6 +626,7 @@
             </div>
           </div>
 
+          <!-- Modal Interativo -->
           <div id="card-modal">
             <h3 id="card-titulo">Carta</h3>
             <p id="card-desc"></p>
@@ -658,8 +639,8 @@
               <span id="card-renda" style="color: #4ade80"></span>
             </p>
 
-            <div id="box-qtd-acoes" style="display: none; margin: 8px 0">
-              <label style="font-size: 11px; color: #cbd5e1">Qtd. Cotas:</label>
+            <div id="box-qtd-acoes" style="display: none; margin: 6px 0">
+              <label style="font-size: 10px; color: #cbd5e1">Qtd. Cotas:</label>
               <input
                 type="number"
                 id="input-qtd-acoes"
@@ -670,14 +651,14 @@
                   background: #090d16;
                   color: #fff;
                   border: 1px solid #334155;
-                  padding: 4px 8px;
+                  padding: 3px 6px;
                   border-radius: 4px;
-                  width: 80px;
-                  margin-left: 6px;
+                  width: 70px;
+                  margin-left: 4px;
                 "
                 oninput="atualizarCalculoAcoes()"
               />
-              <span style="font-size: 11px; margin-left: 8px; color: #38bdf8"
+              <span style="font-size: 10px; margin-left: 6px; color: #38bdf8"
                 >Total: R$ <span id="total-custo-acoes">1000.00</span></span
               >
             </div>
@@ -695,14 +676,12 @@
               style="display: none"
             >
               <button class="btn-vender" onclick="venderAtivoMercado()">
-                💰 Vender Ativo ao Mercado
+                💰 Vender ao Mercado
               </button>
-              <button class="btn-passar" onclick="passarVez()">
-                Manter Ativo
-              </button>
+              <button class="btn-passar" onclick="passarVez()">Manter</button>
             </div>
 
-            <div id="actions-besteira" style="display: none; margin-top: 10px">
+            <div id="actions-besteira" style="display: none; margin-top: 8px">
               <button class="btn-pagar-despesa" onclick="pagarBesteira()">
                 💸 Pagar Despesa
               </button>
@@ -729,10 +708,8 @@
     </div>
 
     <script>
-      let posHumano = 0;
-      let posBot = 0;
-      let humanoNaPista = false;
-      let botNaPista = false;
+      let dadosOpcoes = { profissoes: [], sonhos: [] };
+      let estadoJogo = null;
       let precoAcaoAtiva = 0;
       const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -773,11 +750,11 @@
         const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        const pieces = Array.from({ length: 120 }, () => ({
+        const pieces = Array.from({ length: 140 }, () => ({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height - canvas.height,
           size: Math.random() * 8 + 4,
-          color: ["#facc15", "#38bdf8", "#4ade80", "#ec4899", "#a855f7"][
+          color: ["#facc15", "#38bdf8", "#4ade80", "#ec4899", "#c084fc"][
             Math.floor(Math.random() * 5)
           ],
           speed: Math.random() * 4 + 2,
@@ -854,7 +831,6 @@
       ];
 
       function renderizarAmbosTabuleiros() {
-        // Renderiza Corrida dos Ratos
         const gridR = document.getElementById("grid-ratos");
         gridR.innerHTML = "";
         casasRatos.forEach((c) => {
@@ -863,7 +839,7 @@
           cell.id = `ratos-cell-${c.id}`;
           cell.style.gridColumn = c.col;
           cell.style.gridRow = c.row;
-          cell.innerText = c.nome;
+          cell.innerHTML = `<span>${c.nome}</span><div class="pawns-holder" id="ratos-pawns-${c.id}"></div>`;
           gridR.appendChild(cell);
         });
         const center = document.createElement("div");
@@ -871,7 +847,6 @@
         center.innerHTML = `<span>🐭 CORRIDA</span>`;
         gridR.appendChild(center);
 
-        // Renderiza Pista Rápida
         const gridP = document.getElementById("grid-pista");
         gridP.innerHTML = "";
         casasPista.forEach((c) => {
@@ -880,72 +855,107 @@
           cell.id = `pista-cell-${c.id}`;
           cell.style.gridColumn = c.col;
           cell.style.gridRow = c.row;
-          cell.innerText = c.nome;
+          cell.innerHTML = `<span>${c.nome}</span><div class="pawns-holder" id="pista-pawns-${c.id}"></div>`;
           gridP.appendChild(cell);
         });
       }
 
       function desenharPeoes() {
-        document.querySelectorAll(".pawn").forEach((el) => el.remove());
+        document
+          .querySelectorAll(".pawns-holder")
+          .forEach((el) => (el.innerHTML = ""));
+        if (!estadoJogo || !estadoJogo.jogadores) return;
 
-        // Desenha Peão Humano
-        const prefixH = humanoNaPista ? "pista" : "ratos";
-        const cellH = document.getElementById(`${prefixH}-cell-${posHumano}`);
-        if (cellH) {
-          const pH = document.createElement("div");
-          pH.className = "pawn humano";
-          pH.innerText = humanoNaPista ? "🏎️" : "🐭";
-          cellH.appendChild(pH);
-        }
-
-        // Desenha Peão Bot
-        const prefixB = botNaPista ? "pista" : "ratos";
-        const cellB = document.getElementById(`${prefixB}-cell-${posBot}`);
-        if (cellB) {
-          const pB = document.createElement("div");
-          pB.className = "pawn bot";
-          pB.innerText = botNaPista ? "🏎️" : "🤖";
-          cellB.appendChild(pB);
-        }
+        estadoJogo.jogadores.forEach((j) => {
+          const prefix = j.na_pista_rapida ? "pista" : "ratos";
+          const holder = document.getElementById(
+            `${prefix}-pawns-${j.posicao}`,
+          );
+          if (holder) {
+            const p = document.createElement("div");
+            p.className = "pawn";
+            p.style.background = j.cor;
+            p.innerText = j.na_pista_rapida ? "🏎️" : j.icone;
+            holder.appendChild(p);
+          }
+        });
       }
 
       async function carregarOpcoesSetup() {
         const res = await fetch("/setup_opcoes");
-        const data = await res.json();
-
-        const selProf = document.getElementById("select-profissao");
-        selProf.innerHTML = data.profissoes
-          .map(
-            (p) =>
-              `<option value="${p.nome}">${p.nome} (Salário: R$ ${p.salario} | Despesas: R$ ${p.despesas})</option>`,
-          )
-          .join("");
-
-        const selSonho = document.getElementById("select-sonho");
-        selSonho.innerHTML = data.sonhos
-          .map(
-            (s) =>
-              `<option value="${s.titulo}">${s.titulo} (R$ ${s.custo.toLocaleString("pt-BR")})</option>`,
-          )
-          .join("");
+        dadosOpcoes = await res.json();
+        renderizarSlotsSetup();
       }
 
-      async function iniciarJogo() {
-        const prof = document.getElementById("select-profissao").value;
-        const sonho = document.getElementById("select-sonho").value;
+      function renderizarSlotsSetup() {
+        const n = parseInt(document.getElementById("num-jogadores").value);
+        const container = document.getElementById("slots-container");
+        container.innerHTML = "";
 
-        const res = await fetch("/iniciar", {
+        const padraoNomes = ["Jogador 1", "IA Alpha", "Jogador 2", "IA Beta"];
+        const icones = ["🐭", "🤖", "🐱", "🦊"];
+
+        for (let i = 0; i < n; i++) {
+          const isBot = i > 0;
+          container.innerHTML += `
+                    <div class="slot-player">
+                        <h4>${icones[i]} Participante ${i + 1}</h4>
+                        <div class="slot-grid">
+                            <div class="form-group">
+                                <label>Nome</label>
+                                <input type="text" id="slot-nome-${i}" value="${padraoNomes[i]}">
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo de Jogador</label>
+                                <select id="slot-tipo-${i}">
+                                    <option value="humano" ${!isBot ? "selected" : ""}>👤 Humano</option>
+                                    <option value="bot" ${isBot ? "selected" : ""}>🤖 Robô / IA</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Profissão</label>
+                                <select id="slot-prof-${i}">
+                                    ${dadosOpcoes.profissoes.map((p) => `<option value="${p.nome}" ${p.nome === dadosOpcoes.profissoes[i % dadosOpcoes.profissoes.length].nome ? "selected" : ""}>${p.nome} (R$ ${p.salario})</option>`).join("")}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Sonho</label>
+                                <select id="slot-sonho-${i}">
+                                    ${dadosOpcoes.sonhos.map((s) => `<option value="${s.titulo}" ${s.titulo === dadosOpcoes.sonhos[i % dadosOpcoes.sonhos.length].titulo ? "selected" : ""}>${s.titulo}</option>`).join("")}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
+      }
+
+      async function iniciarMultiplayer() {
+        const n = parseInt(document.getElementById("num-jogadores").value);
+        const jogadores = [];
+        for (let i = 0; i < n; i++) {
+          jogadores.append
+            ? null
+            : jogadores.push({
+                nome: document.getElementById(`slot-nome-${i}`).value,
+                is_bot:
+                  document.getElementById(`slot-tipo-${i}`).value === "bot",
+                profissao: document.getElementById(`slot-prof-${i}`).value,
+                sonho: document.getElementById(`slot-sonho-${i}`).value,
+              });
+        }
+
+        const res = await fetch("/iniciar_multi", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ profissao: prof, sonho: sonho }),
+          body: JSON.stringify({ jogadores }),
         });
-        const data = await res.json();
+        estadoJogo = await res.json();
         document.getElementById("setup-overlay").style.display = "none";
         renderizarAmbosTabuleiros();
-        atualizarTela(data);
-        desenharPeoes();
-        document.getElementById("log").innerText =
-          "Jogo iniciado! Role o dado para sua primeira jogada.";
+        atualizarTela();
+
+        processarTurnoAtual();
       }
 
       function abrirSetup() {
@@ -981,41 +991,45 @@
         document.getElementById("ranking-overlay").style.display = "none";
       }
 
-      function atualizarTela(data) {
-        if (data.humano) {
-          const h = data.humano;
-          posHumano = h.posicao;
-          humanoNaPista = h.na_pista_rapida;
-          document.getElementById("h-nome").innerText = h.nome;
-          document.getElementById("h-prof").innerText = h.profissao;
-          document.getElementById("h-local").innerText = h.na_pista_rapida
-            ? "🏎️ Pista Rápida"
-            : "🐭 Corrida dos Ratos";
-          document.getElementById("h-caixa").innerText = h.caixa.toFixed(2);
-          document.getElementById("h-renda").innerText =
-            h.renda_passiva.toFixed(2);
-          document.getElementById("h-despesas").innerText =
-            h.despesas.toFixed(2);
-          document.getElementById("h-fluxo").innerText =
-            h.fluxo_de_caixa.toFixed(2);
-          document.getElementById("h-divida").innerText =
-            h.emprestimos.toFixed(2);
-          document.getElementById("h-juros").innerText =
-            h.juros_emprestimo.toFixed(2);
+      function atualizarTela() {
+        if (!estadoJogo || !estadoJogo.jogadores) return;
 
-          if (h.saiu_da_corrida && !h.na_pista_rapida) {
-            document.getElementById("btn-avancar").style.display = "block";
-          } else {
-            document.getElementById("btn-avancar").style.display = "none";
-          }
+        const grid = document.getElementById("players-grid");
+        grid.innerHTML = estadoJogo.jogadores
+          .map((j) => {
+            const isActive = j.id === estadoJogo.jogador_atual_id;
+            return `
+                    <div class="player-card ${isActive ? "active" : ""}" style="border-left: 4px solid ${j.cor};">
+                        <h3 style="color:${j.cor};">${j.icone} ${j.nome} ${j.is_bot ? "(IA)" : ""}</h3>
+                        <p><strong>Local:</strong> ${j.na_pista_rapida ? "🏎️ Pista Rápida" : "🐭 Ratos"}</p>
+                        <p><strong>Caixa:</strong> R$ <span style="color:#4ade80;">${j.caixa.toFixed(2)}</span></p>
+                        <p><strong>Renda Passiva:</strong> R$ <span style="color:#38bdf8;">${j.renda_passiva.toFixed(2)}</span></p>
+                        <p><strong>Despesas:</strong> R$ <span style="color:#f87171;">${j.despesas.toFixed(2)}</span></p>
+                        <p><strong>Fluxo:</strong> R$ ${j.fluxo_de_caixa.toFixed(2)}</p>
+                    </div>
+                `;
+          })
+          .join("");
+
+        const cur = estadoJogo.jogadores.find(
+          (j) => j.id === estadoJogo.jogador_atual_id,
+        );
+        if (cur) {
+          document.getElementById("label-banco-jogador").innerText =
+            `Empréstimo (${cur.nome}):`;
+          document.getElementById("cur-divida").innerText =
+            cur.emprestimos.toFixed(2);
+          document.getElementById("cur-juros").innerText =
+            cur.juros_emprestimo.toFixed(2);
+          document.getElementById("label-ativos-jogador").innerText =
+            `Ativos (${cur.nome}):`;
 
           const lista = document.getElementById("assets-list");
-          if (h.ativos && h.ativos.length > 0) {
-            lista.innerHTML = h.ativos
+          if (cur.ativos && cur.ativos.length > 0) {
+            lista.innerHTML = cur.ativos
               .map((a) => {
-                if (a.tipo === "acao") {
+                if (a.tipo === "acao")
                   return `<div class="asset-item"><span>📈 ${a.quantidade}x ${a.nome}</span><span style="color:#38bdf8;">(Custo: R$ ${a.preco_unitario.toFixed(2)})</span></div>`;
-                }
                 return `<div class="asset-item"><span>🏠 ${a.nome}</span><span style="color:#4ade80;">+R$ ${a.renda.toFixed(2)}/mês</span></div>`;
               })
               .join("");
@@ -1023,44 +1037,44 @@
             lista.innerHTML =
               '<span style="color: #64748b; font-size: 11px;">Nenhum ativo adquirido ainda.</span>';
           }
-        }
 
-        if (data.bot) {
-          const b = data.bot;
-          posBot = b.posicao;
-          botNaPista = b.na_pista_rapida;
-          document.getElementById("b-nome").innerText = b.nome;
-          document.getElementById("b-prof").innerText = b.profissao;
-          document.getElementById("b-local").innerText = b.na_pista_rapida
-            ? "🏎️ Pista Rápida"
-            : "🐭 Corrida dos Ratos";
-          document.getElementById("b-caixa").innerText = b.caixa.toFixed(2);
-          document.getElementById("b-renda").innerText =
-            b.renda_passiva.toFixed(2);
-          document.getElementById("b-despesas").innerText =
-            b.despesas.toFixed(2);
-          document.getElementById("b-fluxo").innerText =
-            b.fluxo_de_caixa.toFixed(2);
+          if (cur.saiu_da_corrida && !cur.na_pista_rapida && !cur.is_bot) {
+            document.getElementById("btn-avancar").style.display = "block";
+          } else {
+            document.getElementById("btn-avancar").style.display = "none";
+          }
         }
 
         desenharPeoes();
       }
 
-      function atualizarCalculoAcoes() {
-        const qtd =
-          Number(document.getElementById("input-qtd-acoes").value) || 0;
-        const total = qtd * precoAcaoAtiva;
-        document.getElementById("total-custo-acoes").innerText =
-          total.toFixed(2);
-      }
-
-      async function animarPassos(isHumano, passos, totalCasas) {
+      async function animarPassos(jogadorId, passos, totalCasas) {
+        const j = estadoJogo.jogadores.find((p) => p.id === jogadorId);
         for (let i = 0; i < passos; i++) {
-          if (isHumano) posHumano = (posHumano + 1) % totalCasas;
-          else posBot = (posBot + 1) % totalCasas;
+          j.posicao = (j.posicao + 1) % totalCasas;
           desenharPeoes();
           somPasso();
-          await sleep(900);
+          await sleep(800);
+        }
+      }
+
+      async function processarTurnoAtual() {
+        const cur = estadoJogo.jogadores.find(
+          (j) => j.id === estadoJogo.jogador_atual_id,
+        );
+        const btn = document.getElementById("btn-dado");
+
+        if (cur.is_bot) {
+          btn.disabled = true;
+          document.getElementById("log").innerHTML =
+            `🤖 Vez de <strong>${cur.nome}</strong> (IA)...`;
+          await sleep(1000);
+          fazerJogadaBot();
+        } else {
+          btn.disabled = false;
+          btn.innerText = `🎲 Vez de ${cur.nome}: Rolar Dado`;
+          document.getElementById("log").innerHTML =
+            `É a vez de <strong>${cur.nome}</strong>! Role o dado.`;
         }
       }
 
@@ -1069,16 +1083,19 @@
         btn.disabled = true;
         somDado();
 
+        const curId = estadoJogo.jogador_atual_id;
         const res = await fetch("/jogar_humano", { method: "POST" });
-        const data = await res.json();
-        const total = data.humano.na_pista_rapida ? 8 : 12;
+        estadoJogo = await res.json();
+
+        const cur = estadoJogo.jogadores.find((j) => j.id === curId);
+        const total = cur.na_pista_rapida ? 8 : 12;
 
         document.getElementById("log").innerHTML =
-          `🎲 Você tirou <strong>${data.movimento.dado}</strong>! Movendo...`;
-        await animarPassos(true, data.movimento.dado, total);
-        atualizarTela(data);
+          `🎲 ${cur.nome} tirou <strong>${estadoJogo.movimento.dado}</strong>!`;
+        await animarPassos(curId, estadoJogo.movimento.dado, total);
+        atualizarTela();
 
-        if (data.movimento.passou_payday) somPayday();
+        if (estadoJogo.movimento.passou_payday) somPayday();
 
         const modal = document.getElementById("card-modal");
         const actInvestir = document.getElementById("actions-investir");
@@ -1087,36 +1104,37 @@
         const boxQtdAcoes = document.getElementById("box-qtd-acoes");
 
         if (
-          data.evento &&
-          (data.evento.tipo === "oportunidade" ||
-            data.evento.tipo === "pista_negocio" ||
-            data.evento.tipo === "sonho")
+          estadoJogo.evento &&
+          (estadoJogo.evento.tipo === "oportunidade" ||
+            estadoJogo.evento.tipo === "pista_negocio" ||
+            estadoJogo.evento.tipo === "sonho")
         ) {
           modal.className = "";
-          document.getElementById("card-titulo").innerText = data.evento.titulo;
+          document.getElementById("card-titulo").innerText =
+            estadoJogo.evento.titulo;
           document.getElementById("card-desc").innerText =
-            data.evento.descricao || "Negócio da Pista Rápida.";
+            estadoJogo.evento.descricao || "Negócio da Pista Rápida.";
 
-          if (data.evento.subtipo === "acao") {
-            precoAcaoAtiva = data.evento.preco_unitario;
+          if (estadoJogo.evento.subtipo === "acao") {
+            precoAcaoAtiva = estadoJogo.evento.preco_unitario;
             document.getElementById("card-custo-container").innerHTML =
-              `<strong>Preço por Ação:</strong> R$ <span style="color:#f87171;">${data.evento.preco_unitario.toFixed(2)}</span>`;
+              `<strong>Preço por Ação:</strong> R$ <span style="color:#f87171;">${estadoJogo.evento.preco_unitario.toFixed(2)}</span>`;
             document.getElementById("card-renda-box").style.display =
-              data.evento.renda > 0 ? "block" : "none";
-            if (data.evento.renda > 0)
+              estadoJogo.evento.renda > 0 ? "block" : "none";
+            if (estadoJogo.evento.renda > 0)
               document.getElementById("card-renda").innerText = Number(
-                data.evento.renda,
+                estadoJogo.evento.renda,
               ).toFixed(2);
             boxQtdAcoes.style.display = "block";
             atualizarCalculoAcoes();
           } else {
             boxQtdAcoes.style.display = "none";
             document.getElementById("card-custo-container").innerHTML =
-              `<strong>Custo / Entrada:</strong> R$ <span id="card-custo" style="color:#f87171;">${Number(data.evento.entrada || data.evento.custo).toFixed(2)}</span>`;
-            if (data.evento.renda) {
+              `<strong>Custo / Entrada:</strong> R$ <span id="card-custo" style="color:#f87171;">${Number(estadoJogo.evento.entrada || estadoJogo.evento.custo).toFixed(2)}</span>`;
+            if (estadoJogo.evento.renda) {
               document.getElementById("card-renda-box").style.display = "block";
               document.getElementById("card-renda").innerText = Number(
-                data.evento.renda,
+                estadoJogo.evento.renda,
               ).toFixed(2);
             } else {
               document.getElementById("card-renda-box").style.display = "none";
@@ -1127,17 +1145,17 @@
           actMercado.style.display = "none";
           actBesteira.style.display = "none";
           modal.style.display = "block";
-        } else if (data.evento && data.evento.tipo === "mercado") {
+        } else if (estadoJogo.evento && estadoJogo.evento.tipo === "mercado") {
           boxQtdAcoes.style.display = "none";
-          if (data.evento.possui_ativo) {
+          if (estadoJogo.evento.possui_ativo) {
             somPayday();
             modal.className = "modal-mercado";
             document.getElementById("card-titulo").innerText =
-              `🏪 Oferta: ${data.evento.titulo}`;
+              `🏪 Oferta: ${estadoJogo.evento.titulo}`;
             document.getElementById("card-desc").innerText =
-              data.evento.descricao;
+              estadoJogo.evento.descricao;
             document.getElementById("card-custo-container").innerHTML =
-              `<strong>Oferta de Compra:</strong> R$ <span style="color:#4ade80;">${data.evento.preco_oferta.toFixed(2)}</span>`;
+              `<strong>Oferta de Compra:</strong> R$ <span style="color:#4ade80;">${estadoJogo.evento.preco_oferta.toFixed(2)}</span>`;
             document.getElementById("card-renda-box").style.display = "none";
 
             actInvestir.style.display = "none";
@@ -1147,19 +1165,19 @@
           } else {
             modal.style.display = "none";
             document.getElementById("log").innerHTML =
-              `🏪 Mercado: <em>${data.evento.descricao}</em> (Você não possui este ativo).`;
-            setTimeout(fazerJogadaBot, 1200);
+              `🏪 Mercado: <em>${estadoJogo.evento.descricao}</em>`;
+            processarTurnoAtual();
           }
-        } else if (data.evento && data.evento.tipo === "besteira") {
+        } else if (estadoJogo.evento && estadoJogo.evento.tipo === "besteira") {
           somBesteira();
           boxQtdAcoes.style.display = "none";
           modal.className = "modal-besteira";
           document.getElementById("card-titulo").innerText =
-            `💸 Besteira: ${data.evento.titulo}`;
+            `💸 Besteira: ${estadoJogo.evento.titulo}`;
           document.getElementById("card-desc").innerText =
             "Despesa imprevista obrigatória!";
           document.getElementById("card-custo-container").innerHTML =
-            `<strong>Valor a Pagar:</strong> R$ <span style="color:#f87171;">${Number(data.evento.valor).toFixed(2)}</span>`;
+            `<strong>Valor a Pagar:</strong> R$ <span style="color:#f87171;">${Number(estadoJogo.evento.valor).toFixed(2)}</span>`;
           document.getElementById("card-renda-box").style.display = "none";
 
           actInvestir.style.display = "none";
@@ -1168,14 +1186,38 @@
           modal.style.display = "block";
         } else {
           modal.style.display = "none";
-          if (data.turno_atual === "bot") setTimeout(fazerJogadaBot, 1200);
+          processarTurnoAtual();
         }
 
-        if (data.humano.venceu_jogo) {
+        if (cur.venceu_jogo) {
           somVitoria();
           document.getElementById("log").innerHTML =
-            "👑 <strong>VOCÊ CONQUISTOU SEU SONHO E ENTROU NO HALL DA FAMA!</strong>";
+            `👑 <strong>${cur.nome} CONQUISTOU SEU SONHO E VENCEU O JOGO!</strong>`;
+          btn.disabled = true;
         }
+      }
+
+      async function fazerJogadaBot() {
+        somDado();
+        const botId = estadoJogo.jogador_atual_id;
+        const res = await fetch("/jogar_bot", { method: "POST" });
+        estadoJogo = await res.json();
+
+        const bot = estadoJogo.jogadores.find((j) => j.id === botId);
+        const total = bot.na_pista_rapida ? 8 : 12;
+
+        await animarPassos(botId, estadoJogo.movimento.dado, total);
+        atualizarTela();
+
+        document.getElementById("log").innerHTML = estadoJogo.log_bot;
+
+        if (bot.venceu_jogo) {
+          document.getElementById("log").innerHTML +=
+            `<br>💥 <strong>${bot.nome} comprou seu sonho e venceu!</strong>`;
+          return;
+        }
+
+        processarTurnoAtual();
       }
 
       async function comprarAtivo() {
@@ -1186,110 +1228,81 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ quantidade: qtd }),
         });
-        const data = await res.json();
-        if (!data.sucesso) {
-          alert(data.mensagem);
+        estadoJogo = await res.json();
+        if (!estadoJogo.sucesso) {
+          alert(estadoJogo.mensagem);
           return;
         }
         somCompra();
         document.getElementById("card-modal").style.display = "none";
-        atualizarTela(data);
-        document.getElementById("log").innerHTML = `✅ ${data.mensagem}`;
-
-        if (data.humano.venceu_jogo) {
-          somVitoria();
-          document.getElementById("log").innerHTML =
-            "👑 <strong>VOCÊ CONQUISTOU SEU SONHO E VENCEU O JOGO!</strong>";
-          return;
-        }
-
-        setTimeout(fazerJogadaBot, 1500);
+        atualizarTela();
+        document.getElementById("log").innerHTML = `✅ ${estadoJogo.mensagem}`;
+        processarTurnoAtual();
       }
 
       async function venderAtivoMercado() {
         const res = await fetch("/vender_mercado", { method: "POST" });
-        const data = await res.json();
+        estadoJogo = await res.json();
         somPayday();
         document.getElementById("card-modal").style.display = "none";
-        atualizarTela(data);
-        document.getElementById("log").innerHTML = `💰 ${data.mensagem}`;
-        setTimeout(fazerJogadaBot, 1400);
+        atualizarTela();
+        document.getElementById("log").innerHTML = `💰 ${estadoJogo.mensagem}`;
+        processarTurnoAtual();
       }
 
       async function pagarBesteira() {
         const res = await fetch("/pagar_besteira", { method: "POST" });
-        const data = await res.json();
+        estadoJogo = await res.json();
         document.getElementById("card-modal").style.display = "none";
-        atualizarTela(data);
+        atualizarTela();
         document.getElementById("log").innerHTML =
-          `<span style="color: #f87171;">${data.mensagem}</span>`;
-        setTimeout(fazerJogadaBot, 1400);
-      }
-
-      async function fazerJogadaBot() {
-        document.getElementById("card-humano").classList.remove("active");
-        document.getElementById("card-bot").classList.add("active");
-        document.getElementById("log").innerHTML = "🤖 Vez da IA Rival...";
-
-        await sleep(1000);
-        somDado();
-
-        const res = await fetch("/jogar_bot", { method: "POST" });
-        const data = await res.json();
-        const total = data.bot.na_pista_rapida ? 8 : 12;
-
-        await animarPassos(false, data.movimento.dado, total);
-        atualizarTela(data);
-
-        document.getElementById("log").innerHTML = data.log_bot;
-
-        if (data.bot.venceu_jogo) {
-          document.getElementById("log").innerHTML +=
-            "<br>💥 <strong>A IA conquistou o sonho dela primeiro e venceu!</strong>";
-          return;
-        }
-
-        document.getElementById("card-bot").classList.remove("active");
-        document.getElementById("card-humano").classList.add("active");
-        document.getElementById("btn-dado").disabled = false;
+          `<span style="color: #f87171;">${estadoJogo.mensagem}</span>`;
+        processarTurnoAtual();
       }
 
       async function passarVez() {
         const res = await fetch("/passar", { method: "POST" });
-        const data = await res.json();
+        estadoJogo = await res.json();
         document.getElementById("card-modal").style.display = "none";
-        atualizarTela(data);
-        document.getElementById("log").innerText = "Você passou a vez.";
-        setTimeout(fazerJogadaBot, 1200);
+        atualizarTela();
+        document.getElementById("log").innerText = "Vez passada.";
+        processarTurnoAtual();
       }
 
       async function entrarPistaRapida() {
         const res = await fetch("/entrar_pista_rapida", { method: "POST" });
-        const data = await res.json();
-        humanoNaPista = true;
-        atualizarTela(data);
+        estadoJogo = await res.json();
+        atualizarTela();
         somVitoria();
         document.getElementById("log").innerHTML =
-          "🌟 <strong>Você entrou na Pista Rápida!</strong>";
+          "🌟 <strong>Entrou na Pista Rápida!</strong>";
       }
 
       async function pegarEmprestimo() {
         const res = await fetch("/emprestimo", { method: "POST" });
-        const data = await res.json();
-        if (data.sucesso) {
+        estadoJogo = await res.json();
+        if (estadoJogo.sucesso) {
           somPayday();
-          atualizarTela(data);
+          atualizarTela();
         }
       }
 
       async function quitarEmprestimo() {
         const res = await fetch("/quitar_emprestimo", { method: "POST" });
-        const data = await res.json();
-        if (!data.sucesso) alert(data.mensagem);
+        estadoJogo = await res.json();
+        if (!estadoJogo.sucesso) alert(estadoJogo.mensagem);
         else {
           somCompra();
-          atualizarTela(data);
+          atualizarTela();
         }
+      }
+
+      function atualizarCalculoAcoes() {
+        const qtd =
+          Number(document.getElementById("input-qtd-acoes").value) || 0;
+        const total = qtd * precoAcaoAtiva;
+        document.getElementById("total-custo-acoes").innerText =
+          total.toFixed(2);
       }
 
       carregarOpcoesSetup();
