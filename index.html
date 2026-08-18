@@ -7,6 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>Cashflow Game - Multiplayer Online</title>
+    <link rel="icon" href="favicon.gif" type="image/x-icon" />
     <style>
       * {
         box-sizing: border-box;
@@ -36,7 +37,6 @@
         z-index: 100;
       }
 
-      /* Floating Reaction Emojis Container */
       #reactions-floating-container {
         position: fixed;
         top: 0;
@@ -201,7 +201,6 @@
         cursor: pointer;
       }
 
-      /* Status de Conexão */
       .status-badge {
         display: inline-flex;
         align-items: center;
@@ -228,7 +227,54 @@
         box-shadow: 0 0 6px #facc15;
       }
 
-      /* Mesa de Jogo */
+      /* Timer Bar UI */
+      .timer-container {
+        background: #0b1329;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 6px 10px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .timer-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        font-weight: bold;
+      }
+      .timer-bar-bg {
+        width: 100%;
+        height: 6px;
+        background: #1e293b;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .timer-bar-fill {
+        width: 100%;
+        height: 100%;
+        background: #38bdf8;
+        transition:
+          width 1s linear,
+          background-color 0.3s;
+      }
+      .timer-bar-fill.warn {
+        background: #facc15;
+      }
+      .timer-bar-fill.danger {
+        background: #ef4444;
+        animation: pulseRed 0.8s infinite alternate;
+      }
+      @keyframes pulseRed {
+        0% {
+          opacity: 0.7;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
       .game-wrapper {
         display: flex;
         gap: 16px;
@@ -585,7 +631,6 @@
         line-height: 1.3;
       }
 
-      /* Social / Chat & Reactions Bar */
       .social-bar {
         margin-top: 8px;
         background: #0b1329;
@@ -678,7 +723,7 @@
             margin-bottom: 14px;
           "
         >
-          Simulação financeira com salas online, IA e sincronização ao vivo.
+          Partidas com salas online, IA e limite de 30s por turno.
         </p>
 
         <div class="form-group">
@@ -804,6 +849,17 @@
     <!-- Mesa Principal -->
     <div class="game-wrapper">
       <div class="boards-column">
+        <!-- Timer Bar -->
+        <div class="timer-container" id="timer-box">
+          <div class="timer-header">
+            <span id="timer-label">⏱️ Tempo do Turno:</span>
+            <span id="timer-count" style="color: #38bdf8">30s</span>
+          </div>
+          <div class="timer-bar-bg">
+            <div id="timer-bar" class="timer-bar-fill"></div>
+          </div>
+        </div>
+
         <div class="board-box">
           <div class="board-top">
             <div class="board-header" style="color: #38bdf8">
@@ -860,7 +916,7 @@
             </div>
           </div>
 
-          <!-- Modal de Ação da Casa -->
+          <!-- Modal Interativo -->
           <div id="card-modal">
             <h3 id="card-titulo">Carta</h3>
             <p id="card-desc"></p>
@@ -1013,6 +1069,10 @@
       let estadoJogo = null;
       let dadosOpcoes = { profissoes: [], sonhos: [] };
       let precoAcaoAtiva = 0;
+
+      let tempoRestante = 30;
+      let timerInterval = null;
+
       const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
       // Áudio
@@ -1086,6 +1146,41 @@
         el.style.left = `${Math.floor(Math.random() * 70) + 15}%`;
         container.appendChild(el);
         setTimeout(() => el.remove(), 2900);
+      }
+
+      function iniciarTimerTurno() {
+        if (timerInterval) clearInterval(timerInterval);
+        tempoRestante = 30;
+        atualizarTimerUI();
+
+        timerInterval = setInterval(() => {
+          tempoRestante--;
+          if (tempoRestante < 0) tempoRestante = 0;
+          atualizarTimerUI();
+          if (tempoRestante <= 0) {
+            clearInterval(timerInterval);
+          }
+        }, 1000);
+      }
+
+      function atualizarTimerUI() {
+        const bar = document.getElementById("timer-bar");
+        const label = document.getElementById("timer-count");
+        label.innerText = `${tempoRestante}s`;
+
+        const pct = (tempoRestante / 30) * 100;
+        bar.style.width = `${pct}%`;
+
+        if (tempoRestante > 15) {
+          bar.className = "timer-bar-fill";
+          label.style.color = "#38bdf8";
+        } else if (tempoRestante > 7) {
+          bar.className = "timer-bar-fill warn";
+          label.style.color = "#facc15";
+        } else {
+          bar.className = "timer-bar-fill danger";
+          label.style.color = "#ef4444";
+        }
       }
 
       const casasRatos = [
@@ -1220,7 +1315,6 @@
         }
       }
 
-      // Reconexão Automática Silenciosa via WebSocket
       function conectarWebSocket(codigo) {
         if (reconnectTimer) clearTimeout(reconnectTimer);
 
@@ -1260,6 +1354,7 @@
             estadoJogo = data.estado;
             renderizarAmbosTabuleiros();
             atualizarTela();
+            iniciarTimerTurno();
             processarTurno();
           } else if (data.tipo === "acao_executada") {
             if (data.estado.movimento) {
@@ -1274,6 +1369,7 @@
             }
             estadoJogo = data.estado;
             atualizarTela();
+            iniciarTimerTurno();
             processarTurno();
           } else if (data.tipo === "novo_chat") {
             adicionarMensagemNoFeed(data.remetente, data.texto);
