@@ -74,7 +74,7 @@
         }
       }
 
-      /* Modal Overlay do Dado 3D Animado */
+      /* Modal Overlay do Dado 3D */
       #dice-overlay {
         position: fixed;
         top: 0;
@@ -301,6 +301,31 @@
       .btn-secondary:hover {
         background: #475569;
       }
+      .btn-rules {
+        background: #0284c7;
+        color: white;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .rules-section {
+        margin-bottom: 14px;
+        background: #0b1329;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .rules-section h3 {
+        font-size: 13px;
+        color: #facc15;
+        margin-bottom: 4px;
+      }
 
       .lobby-players-list {
         background: #0b1329;
@@ -371,7 +396,6 @@
         box-shadow: 0 0 6px #facc15;
       }
 
-      /* Timer Bar UI */
       .timer-container {
         background: #0b1329;
         border: 1px solid #1e293b;
@@ -897,6 +921,64 @@
       </div>
     </div>
 
+    <!-- Overlay: Quadro de Regras do Jogo -->
+    <div class="overlay" id="rules-overlay" style="display: none">
+      <div class="modal-card">
+        <h2>📖 Regras e Dinâmica do Jogo</h2>
+
+        <div class="rules-section">
+          <h3>🎯 1. O Grande Objetivo</h3>
+          <p>
+            Escapar da rotina de assalariado na
+            <strong>Corrida dos Ratos</strong> acumulando Renda Passiva até
+            superar seus gastos, entrar na <strong>Pista Rápida</strong> e
+            conquistar o seu Sonho de vida!
+          </p>
+        </div>
+
+        <div class="rules-section">
+          <h3>🐭 2. Corrida dos Ratos (Circuito Interno)</h3>
+          <p>
+            • <strong>💰 Payday:</strong> Ao passar ou parar, você recebe seu
+            Salário + Renda Passiva líquida.<br />
+            • <strong>📈 Oportunidades:</strong> Compre imóveis, ações de
+            empresas, fundos (FIIs) ou cripto para aumentar seu fluxo de caixa
+            mensal.<br />
+            • <strong>🏪 Mercado:</strong> Investidores oferecem compras
+            lucrativas pelos seus ativos.<br />
+            • <strong>💸 Besteiras:</strong> Gastos imprevistos e supérfluos que
+            debitam seu saldo.
+          </p>
+        </div>
+
+        <div class="rules-section">
+          <h3>🏎️ 3. Como Vencer (Pista Rápida)</h3>
+          <p>
+            • Quando sua <strong>Renda Passiva > Despesas</strong>, o botão
+            dourado é liberado para você saltar de circuito.<br />
+            • Na Pista Rápida, as despesas são eliminadas e você adquire grandes
+            negócios lucrativos.<br />
+            • O primeiro a cair na casa do seu <strong>💎 Sonho</strong> e
+            possuir capital para comprá-lo <strong>VENCE A PARTIDA!</strong>
+          </p>
+        </div>
+
+        <div class="rules-section">
+          <h3>🏦 4. Empréstimos & Tempo de Turno</h3>
+          <p>
+            • Você pode pegar empréstimos de R$ 1.000 a qualquer momento (juros
+            de 10% ou R$ 100/mês).<br />
+            • Cada turno possui limite de <strong>30 segundos</strong> para
+            manter a partida dinâmica e sem travamentos.
+          </p>
+        </div>
+
+        <button class="btn-primary" onclick="fecharRegras()">
+          Entendi, Voltar ao Jogo
+        </button>
+      </div>
+    </div>
+
     <!-- Overlay 1: Entrada / Criação -->
     <div class="overlay" id="entry-overlay">
       <div class="modal-card">
@@ -906,11 +988,17 @@
             font-size: 12px;
             color: #94a3b8;
             text-align: center;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
           "
         >
           Partidas com salas online, IA e limite de 30s por turno.
         </p>
+
+        <div style="text-align: center; margin-bottom: 14px">
+          <button class="btn-rules" onclick="abrirRegras()">
+            📖 Como Jogar / Regras
+          </button>
+        </div>
 
         <div class="form-group">
           <label>Seu Nome</label>
@@ -1052,6 +1140,7 @@
               🐭 Corrida dos Ratos
             </div>
             <div class="btn-group-top">
+              <button class="btn-top" onclick="abrirRegras()">📖 Regras</button>
               <span id="net-status" class="status-badge"
                 ><span class="dot dot-green"></span> Online</span
               >
@@ -1259,6 +1348,10 @@
       let tempoRestante = 30;
       let timerInterval = null;
 
+      // Fila de Processamento de Ações Sequenciais (Anti-Race Condition)
+      const filaMensagens = [];
+      let processandoFila = false;
+
       const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
       // Áudio
@@ -1321,6 +1414,13 @@
           else ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
         render();
+      }
+
+      function abrirRegras() {
+        document.getElementById("rules-overlay").style.display = "flex";
+      }
+      function fecharRegras() {
+        document.getElementById("rules-overlay").style.display = "none";
       }
 
       function animarEmojiFlutuante(emoji) {
@@ -1558,8 +1658,18 @@
           ws.close();
         };
 
-        ws.onmessage = async (event) => {
-          const data = JSON.parse(event.data);
+        ws.onmessage = (event) => {
+          filaMensagens.push(JSON.parse(event.data));
+          processarFilaMensagens();
+        };
+      }
+
+      async function processarFilaMensagens() {
+        if (processandoFila) return;
+        processandoFila = true;
+
+        while (filaMensagens.length > 0) {
+          const data = filaMensagens.shift();
 
           if (data.tipo === "lobby_atualizado") {
             atualizarLobbyUI(data.sala);
@@ -1590,6 +1700,7 @@
               );
 
               document.getElementById("log").innerHTML =
+                data.estado.log_bot ||
                 `🎲 ${j ? j.nome : "Jogador"} tirou <strong>${data.estado.movimento.dado}</strong>!`;
               if (j)
                 await animarPassos(curId, data.estado.movimento.dado, total);
@@ -1608,7 +1719,9 @@
           } else if (data.tipo === "nova_reacao") {
             animarEmojiFlutuante(data.emoji);
           }
-        };
+        }
+
+        processandoFila = false;
       }
 
       async function criarNovaSala() {

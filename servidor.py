@@ -28,12 +28,10 @@ class Sala:
             self.bot_task.cancel()
 
     def processar_fluxo_pos_acao(self):
-        """Gerencia automaticamente a passagem de turno no servidor (Anti-Travamento)."""
         self.parar_timers()
         if self.status != "jogando" or not self.jogo:
             return
 
-        # Verifica se alguém venceu a partida
         if any(j.venceu_jogo for j in self.jogo.jogadores):
             return
 
@@ -43,23 +41,27 @@ class Sala:
             self.timer_task = asyncio.create_task(self._executar_timer_30s())
 
     async def _executar_turnos_bot(self):
-        """Executa a vez de robôs sequencialmente com delay visual agradável."""
         try:
             while self.status == "jogando" and self.jogo and self.jogo.jogador_atual.is_bot:
                 if any(j.venceu_jogo for j in self.jogo.jogadores):
                     break
-                await asyncio.sleep(1.6)
+                
+                # Aguarda o tempo necessário para as animações do cliente concluírem
+                await asyncio.sleep(3.2)
+                
                 if not self.jogo.jogador_atual.is_bot:
                     break
+                
                 resultado = self.jogo.processar_jogada_bot()
                 await self.broadcast({"tipo": "acao_executada", "estado": resultado})
             
-            # Quando a vez chegar a um jogador humano:
             if self.status == "jogando" and self.jogo and not self.jogo.jogador_atual.is_bot:
                 if not any(j.venceu_jogo for j in self.jogo.jogadores):
                     self.timer_task = asyncio.create_task(self._executar_timer_30s())
         except asyncio.CancelledError:
             pass
+        except Exception as e:
+            print(f"Erro na execução da IA: {e}")
 
     async def _executar_timer_30s(self):
         try:
@@ -158,7 +160,7 @@ async def entrar_sala(data: EntrarSalaRequest):
         existente = next((j for j in sala.jogadores_lobby if j["id"] == data.client_id), None)
         if existente:
             return {"sucesso": True, "codigo": codigo, "sala": serializar_sala(sala)}
-        return {"sucesso": False, "mensagem": "Partida em andamento. Não é possível novos participantes."}
+        return {"sucesso": False, "mensagem": "Partida em andamento."}
 
     if len(sala.jogadores_lobby) >= 4:
         return {"sucesso": False, "mensagem": "A sala já está cheia (máx 4 jogadores)."}
@@ -287,7 +289,6 @@ async def websocket_endpoint(websocket: WebSocket, codigo_sala: str, client_id: 
                     resultado = jogo.processar_jogada_humano()
                     await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
                     
-                    # Se parou em casa que não requer escolha do jogador (Payday, Cashflow Day, etc.), avança:
                     if not jogo.evento_atual and not jogo.carta_ativa:
                         sala.processar_fluxo_pos_acao()
                     else:
