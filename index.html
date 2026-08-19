@@ -74,7 +74,7 @@
         }
       }
 
-      /* Modal Overlay do Dado 3D */
+      /* Modal Overlay do Dado 3D Animado */
       #dice-overlay {
         position: fixed;
         top: 0;
@@ -313,13 +313,14 @@
       }
 
       .rules-section {
-        margin-bottom: 14px;
+        margin-bottom: 12px;
         background: #0b1329;
         border: 1px solid #1e293b;
         border-radius: 8px;
         padding: 10px 12px;
         font-size: 12px;
         line-height: 1.4;
+        text-align: left;
       }
       .rules-section h3 {
         font-size: 13px;
@@ -332,7 +333,7 @@
         border: 1px solid #334155;
         border-radius: 8px;
         padding: 12px;
-        margin: 14px 0;
+        margin: 12px 0;
       }
       .lobby-player-item {
         display: flex;
@@ -351,7 +352,7 @@
         border: 1px dashed #38bdf8;
         border-radius: 8px;
         padding: 10px;
-        margin: 12px 0;
+        margin: 10px 0;
         text-align: center;
       }
       .share-box p {
@@ -396,6 +397,7 @@
         box-shadow: 0 0 6px #facc15;
       }
 
+      /* Timer Bar UI */
       .timer-container {
         background: #0b1329;
         border: 1px solid #1e293b;
@@ -921,7 +923,7 @@
       </div>
     </div>
 
-    <!-- Overlay: Quadro de Regras do Jogo -->
+    <!-- Overlay: Quadro Completo de Regras -->
     <div class="overlay" id="rules-overlay" style="display: none">
       <div class="modal-card">
         <h2>📖 Regras e Dinâmica do Jogo</h2>
@@ -974,7 +976,7 @@
         </div>
 
         <button class="btn-primary" onclick="fecharRegras()">
-          Entendi, Voltar ao Jogo
+          Entendi, Voltar
         </button>
       </div>
     </div>
@@ -1077,6 +1079,43 @@
               margin-top: 4px;
             "
           ></span>
+        </div>
+
+        <div
+          class="rules-section"
+          style="background: #07101f; border-color: #334155; margin-top: 8px"
+        >
+          <h3
+            style="
+              color: #38bdf8;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <span>📖 Resumo das Regras:</span>
+            <button
+              onclick="abrirRegras()"
+              style="
+                background: #0284c7;
+                color: #fff;
+                border: none;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 10px;
+                cursor: pointer;
+              "
+            >
+              Ver Completo
+            </button>
+          </h3>
+          <p style="font-size: 11px; color: #cbd5e1; margin-top: 4px">
+            1. Compre <strong>Oportunidades</strong> na Corrida dos Ratos.<br />
+            2. Ao ter <strong>Renda Passiva > Despesas</strong>, entre na
+            <strong>Pista Rápida</strong>.<br />
+            3. Quem comprar o seu <strong>💎 Sonho</strong> primeiro,
+            <strong>vence o jogo!</strong>
+          </p>
         </div>
 
         <div class="lobby-players-list">
@@ -1348,7 +1387,6 @@
       let tempoRestante = 30;
       let timerInterval = null;
 
-      // Fila de Processamento de Ações Sequenciais (Anti-Race Condition)
       const filaMensagens = [];
       let processandoFila = false;
 
@@ -1468,6 +1506,26 @@
 
       function iniciarTimerTurno() {
         if (timerInterval) clearInterval(timerInterval);
+
+        const cur = estadoJogo
+          ? estadoJogo.jogadores.find(
+              (j) => j.id === estadoJogo.jogador_atual_id,
+            )
+          : null;
+        const bar = document.getElementById("timer-bar");
+        const label = document.getElementById("timer-count");
+        const timerLabel = document.getElementById("timer-label");
+
+        if (cur && cur.is_bot) {
+          timerLabel.innerText = "🤖 Vez do Robô:";
+          label.innerText = "Pensando...";
+          label.style.color = "#38bdf8";
+          bar.className = "timer-bar-fill";
+          bar.style.width = "100%";
+          return;
+        }
+
+        timerLabel.innerText = "⏱️ Tempo do Turno:";
         tempoRestante = 30;
         atualizarTimerUI();
 
@@ -1686,11 +1744,11 @@
             processarTurno();
           } else if (data.tipo === "acao_executada") {
             if (data.estado.movimento) {
-              const curId = estadoJogo
-                ? estadoJogo.jogador_atual_id
-                : data.estado.jogador_atual_id;
+              const targetId =
+                data.jogador_id_movimento ||
+                (estadoJogo ? estadoJogo.jogador_atual_id : null);
               const j = (estadoJogo || data.estado).jogadores.find(
-                (p) => p.id === curId,
+                (p) => p.id === targetId,
               );
               const total = j && j.na_pista_rapida ? 8 : 12;
 
@@ -1702,8 +1760,8 @@
               document.getElementById("log").innerHTML =
                 data.estado.log_bot ||
                 `🎲 ${j ? j.nome : "Jogador"} tirou <strong>${data.estado.movimento.dado}</strong>!`;
-              if (j)
-                await animarPassos(curId, data.estado.movimento.dado, total);
+              if (j && targetId)
+                await animarPassos(targetId, data.estado.movimento.dado, total);
               if (data.estado.movimento.passou_payday) somPayday();
             } else if (data.estado.mensagem) {
               document.getElementById("log").innerHTML =

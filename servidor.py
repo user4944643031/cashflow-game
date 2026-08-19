@@ -36,40 +36,46 @@ class Sala:
             return
 
         if self.jogo.jogador_atual.is_bot:
-            self.bot_task = asyncio.create_task(self._executar_turnos_bot())
+            self.bot_task = asyncio.create_task(self._executar_loop_bots())
         else:
             self.timer_task = asyncio.create_task(self._executar_timer_30s())
 
-    async def _executar_turnos_bot(self):
+    async def _executar_loop_bots(self):
         try:
             while self.status == "jogando" and self.jogo and self.jogo.jogador_atual.is_bot:
                 if any(j.venceu_jogo for j in self.jogo.jogadores):
                     break
                 
-                # Aguarda o tempo necessário para as animações do cliente concluírem
-                await asyncio.sleep(3.2)
-                
+                await asyncio.sleep(1.8)
                 if not self.jogo.jogador_atual.is_bot:
                     break
                 
+                bot_id = self.jogo.jogador_atual.id
                 resultado = self.jogo.processar_jogada_bot()
-                await self.broadcast({"tipo": "acao_executada", "estado": resultado})
-            
+                await self.broadcast({
+                    "tipo": "acao_executada",
+                    "jogador_id_movimento": bot_id,
+                    "estado": resultado
+                })
+                await asyncio.sleep(2.2)
+
             if self.status == "jogando" and self.jogo and not self.jogo.jogador_atual.is_bot:
                 if not any(j.venceu_jogo for j in self.jogo.jogadores):
                     self.timer_task = asyncio.create_task(self._executar_timer_30s())
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            print(f"Erro na execução da IA: {e}")
+            print(f"[ERRO BOT LOOP]: {e}")
 
     async def _executar_timer_30s(self):
         try:
             await asyncio.sleep(30)
             if self.status == "jogando" and self.jogo and not self.jogo.jogador_atual.is_bot:
+                humano_id = self.jogo.jogador_atual.id
                 resultado = self.jogo.forcar_timeout_atual()
                 await self.broadcast({
                     "tipo": "acao_executada",
+                    "jogador_id_movimento": humano_id if "movimento" in resultado else None,
                     "estado": resultado,
                     "timeout": True
                 })
@@ -286,8 +292,13 @@ async def websocket_endpoint(websocket: WebSocket, codigo_sala: str, client_id: 
 
             if acao == "jogar_humano":
                 if jogo.jogador_atual.id == client_id:
+                    humano_id = jogo.jogador_atual.id
                     resultado = jogo.processar_jogada_humano()
-                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+                    await sala.broadcast({
+                        "tipo": "acao_executada",
+                        "jogador_id_movimento": humano_id,
+                        "estado": resultado
+                    })
                     
                     if not jogo.evento_atual and not jogo.carta_ativa:
                         sala.processar_fluxo_pos_acao()
