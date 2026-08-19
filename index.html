@@ -127,7 +127,6 @@
         box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
       }
 
-      /* Faces do Cubo */
       .face-1 {
         transform: rotateY(0deg) translateZ(50px);
       }
@@ -147,7 +146,6 @@
         transform: rotateX(-90deg) translateZ(50px);
       }
 
-      /* Posições dos pontos */
       .face-1 .pip:nth-child(1) {
         grid-area: 2 / 2;
       }
@@ -373,6 +371,7 @@
         box-shadow: 0 0 6px #facc15;
       }
 
+      /* Timer Bar UI */
       .timer-container {
         background: #0b1329;
         border: 1px solid #1e293b;
@@ -1284,9 +1283,8 @@
         });
       }
 
-      const somDado = () => {
+      const somDado = () =>
         tocarSom([150, 220, 310, 440, 330], "triangle", 0.12);
-      };
       const somPasso = () => tocarSom([300], "square", 0.04);
       const somPayday = () => tocarSom([523, 659, 783, 1046], "sine", 0.18);
       const somCompra = () => tocarSom([440, 554, 659], "sine", 0.12);
@@ -1337,7 +1335,6 @@
         setTimeout(() => el.remove(), 2900);
       }
 
-      // Rotações 3D para cada face do dado
       const rotacaoFace = {
         1: { x: 0, y: 0 },
         2: { x: 90, y: 0 },
@@ -1356,7 +1353,6 @@
         overlay.style.display = "flex";
         somDado();
 
-        // Adiciona giros múltiplos aleatórios antes de pousar
         const voltasExtrasX = (Math.floor(Math.random() * 3) + 3) * 360;
         const voltasExtrasY = (Math.floor(Math.random() * 3) + 3) * 360;
         const target = rotacaoFace[valor] || rotacaoFace[1];
@@ -1580,18 +1576,29 @@
             processarTurno();
           } else if (data.tipo === "acao_executada") {
             if (data.estado.movimento) {
-              const curId = estadoJogo.jogador_atual_id;
-              const j = estadoJogo.jogadores.find((p) => p.id === curId);
-              const total = j.na_pista_rapida ? 8 : 12;
+              const curId = estadoJogo
+                ? estadoJogo.jogador_atual_id
+                : data.estado.jogador_atual_id;
+              const j = (estadoJogo || data.estado).jogadores.find(
+                (p) => p.id === curId,
+              );
+              const total = j && j.na_pista_rapida ? 8 : 12;
 
-              // Executa animação do Dado 3D
-              await animarDado3D(data.estado.movimento.dado, j.nome);
+              await animarDado3D(
+                data.estado.movimento.dado,
+                j ? j.nome : "Jogador",
+              );
 
               document.getElementById("log").innerHTML =
-                `🎲 ${j.nome} tirou <strong>${data.estado.movimento.dado}</strong>!`;
-              await animarPassos(curId, data.estado.movimento.dado, total);
+                `🎲 ${j ? j.nome : "Jogador"} tirou <strong>${data.estado.movimento.dado}</strong>!`;
+              if (j)
+                await animarPassos(curId, data.estado.movimento.dado, total);
               if (data.estado.movimento.passou_payday) somPayday();
+            } else if (data.estado.mensagem) {
+              document.getElementById("log").innerHTML =
+                `✅ ${data.estado.mensagem}`;
             }
+
             estadoJogo = data.estado;
             atualizarTela();
             iniciarTimerTurno();
@@ -1829,6 +1836,7 @@
 
       async function animarPassos(jogadorId, passos, totalCasas) {
         const j = estadoJogo.jogadores.find((p) => p.id === jogadorId);
+        if (!j) return;
         for (let i = 0; i < passos; i++) {
           j.posicao = (j.posicao + 1) % totalCasas;
           desenharPeoes();
@@ -1841,6 +1849,7 @@
         const cur = estadoJogo.jogadores.find(
           (j) => j.id === estadoJogo.jogador_atual_id,
         );
+        if (!cur) return;
         const isMyTurn = cur.id === myClientId;
         const btnDado = document.getElementById("btn-dado");
         const modal = document.getElementById("card-modal");
@@ -1851,12 +1860,6 @@
           modal.style.display = "none";
           document.getElementById("log").innerHTML =
             `🤖 Vez de <strong>${cur.nome}</strong> (IA)...`;
-
-          const myIsHost = estadoJogo.jogadores[0].id === myClientId;
-          if (myIsHost) {
-            await sleep(1200);
-            ws.send(JSON.stringify({ acao: "jogar_bot" }));
-          }
           return;
         }
 
