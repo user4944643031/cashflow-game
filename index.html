@@ -74,7 +74,6 @@
         }
       }
 
-      /* Modal Overlay do Dado 3D Animado */
       #dice-overlay {
         position: fixed;
         top: 0;
@@ -90,36 +89,36 @@
         z-index: 80;
       }
       .dice-scene {
-        width: 100px;
-        height: 100px;
+        width: 90px;
+        height: 90px;
         perspective: 600px;
-        margin-bottom: 20px;
+        margin-bottom: 16px;
       }
       .dice-cube {
         width: 100%;
         height: 100%;
         position: relative;
         transform-style: preserve-3d;
-        transition: transform 1.2s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+        transition: transform 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2);
       }
 
       .dice-face {
         position: absolute;
-        width: 100px;
-        height: 100px;
+        width: 90px;
+        height: 90px;
         background: #ffffff;
         border: 3px solid #cbd5e1;
-        border-radius: 16px;
+        border-radius: 14px;
         display: grid;
         grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-        padding: 12px;
+        padding: 10px;
         box-shadow:
           inset 0 0 15px rgba(0, 0, 0, 0.2),
           0 0 15px rgba(255, 255, 255, 0.2);
       }
       .pip {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
         background-color: #0f172a;
         border-radius: 50%;
         justify-self: center;
@@ -128,22 +127,22 @@
       }
 
       .face-1 {
-        transform: rotateY(0deg) translateZ(50px);
+        transform: rotateY(0deg) translateZ(45px);
       }
       .face-6 {
-        transform: rotateY(180deg) translateZ(50px);
+        transform: rotateY(180deg) translateZ(45px);
       }
       .face-3 {
-        transform: rotateY(90deg) translateZ(50px);
+        transform: rotateY(90deg) translateZ(45px);
       }
       .face-4 {
-        transform: rotateY(-90deg) translateZ(50px);
+        transform: rotateY(-90deg) translateZ(45px);
       }
       .face-5 {
-        transform: rotateX(90deg) translateZ(50px);
+        transform: rotateX(90deg) translateZ(45px);
       }
       .face-2 {
-        transform: rotateX(-90deg) translateZ(50px);
+        transform: rotateX(-90deg) translateZ(45px);
       }
 
       .face-1 .pip:nth-child(1) {
@@ -211,7 +210,7 @@
       }
 
       .dice-player-label {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: bold;
         color: #facc15;
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
@@ -328,6 +327,35 @@
         margin-bottom: 4px;
       }
 
+      .victory-card {
+        background: linear-gradient(145deg, #131d2e, #0c2340);
+        border: 2px solid #facc15;
+        box-shadow: 0 0 40px rgba(250, 204, 21, 0.4);
+        text-align: center;
+      }
+      .victory-trophy {
+        font-size: 55px;
+        margin-bottom: 8px;
+        animation: bounce 1s infinite alternate;
+      }
+      @keyframes bounce {
+        0% {
+          transform: scale(0.9);
+        }
+        100% {
+          transform: scale(1.1);
+        }
+      }
+      .victory-stats {
+        background: #07101f;
+        border-radius: 8px;
+        padding: 12px;
+        margin: 14px 0;
+        text-align: left;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
       .lobby-players-list {
         background: #0b1329;
         border: 1px solid #334155;
@@ -397,7 +425,6 @@
         box-shadow: 0 0 6px #facc15;
       }
 
-      /* Timer Bar UI */
       .timer-container {
         background: #0b1329;
         border: 1px solid #1e293b;
@@ -644,6 +671,11 @@
         background: #3b82f6;
         color: white;
       }
+      .btn-bank.add:disabled {
+        background: #334155;
+        color: #64748b;
+        cursor: not-allowed;
+      }
       .btn-bank.pay {
         background: #10b981;
         color: white;
@@ -654,7 +686,7 @@
         border-radius: 8px;
         padding: 6px 10px;
         margin-bottom: 8px;
-        max-height: 60px;
+        max-height: 75px;
         overflow-y: auto;
         text-align: left;
       }
@@ -881,7 +913,6 @@
     <canvas id="confetti-canvas"></canvas>
     <div id="reactions-floating-container"></div>
 
-    <!-- Overlay do Dado 3D -->
     <div id="dice-overlay">
       <div class="dice-scene">
         <div id="dice-cube" class="dice-cube">
@@ -923,65 +954,80 @@
       </div>
     </div>
 
-    <!-- Overlay: Quadro Completo de Regras -->
-    <div class="overlay" id="rules-overlay" style="display: none">
-      <div class="modal-card">
-        <h2>📖 Regras e Dinâmica do Jogo</h2>
+    <!-- Overlay: Tela de Campeão / Vitória -->
+    <div
+      class="overlay"
+      id="victory-overlay"
+      style="display: none; z-index: 120"
+    >
+      <div class="modal-card victory-card">
+        <div class="victory-trophy">🏆</div>
+        <h2 style="font-size: 24px; color: #facc15">TEMOS UM VENCEDOR!</h2>
+        <p
+          id="victory-winner-name"
+          style="font-size: 18px; font-weight: bold; color: #fff; margin: 6px 0"
+        ></p>
 
-        <div class="rules-section">
-          <h3>🎯 1. O Grande Objetivo</h3>
-          <p>
-            Escapar da rotina de assalariado na
-            <strong>Corrida dos Ratos</strong> acumulando Renda Passiva até
-            superar seus gastos, entrar na <strong>Pista Rápida</strong> e
-            conquistar o seu Sonho de vida!
-          </p>
+        <div class="victory-stats" id="victory-stats-box"></div>
+
+        <div style="display: flex; gap: 10px; margin-top: 12px">
+          <button class="btn-primary" onclick="location.reload()">
+            🔄 Jogar Novamente
+          </button>
         </div>
-
-        <div class="rules-section">
-          <h3>🐭 2. Corrida dos Ratos (Circuito Interno)</h3>
-          <p>
-            • <strong>💰 Payday:</strong> Ao passar ou parar, você recebe seu
-            Salário + Renda Passiva líquida.<br />
-            • <strong>📈 Oportunidades:</strong> Compre imóveis, ações de
-            empresas, fundos (FIIs) ou cripto para aumentar seu fluxo de caixa
-            mensal.<br />
-            • <strong>🏪 Mercado:</strong> Investidores oferecem compras
-            lucrativas pelos seus ativos.<br />
-            • <strong>💸 Besteiras:</strong> Gastos imprevistos e supérfluos que
-            debitam seu saldo.
-          </p>
-        </div>
-
-        <div class="rules-section">
-          <h3>🏎️ 3. Como Vencer (Pista Rápida)</h3>
-          <p>
-            • Quando sua <strong>Renda Passiva > Despesas</strong>, o botão
-            dourado é liberado para você saltar de circuito.<br />
-            • Na Pista Rápida, as despesas são eliminadas e você adquire grandes
-            negócios lucrativos.<br />
-            • O primeiro a cair na casa do seu <strong>💎 Sonho</strong> e
-            possuir capital para comprá-lo <strong>VENCE A PARTIDA!</strong>
-          </p>
-        </div>
-
-        <div class="rules-section">
-          <h3>🏦 4. Empréstimos & Tempo de Turno</h3>
-          <p>
-            • Você pode pegar empréstimos de R$ 1.000 a qualquer momento (juros
-            de 10% ou R$ 100/mês).<br />
-            • Cada turno possui limite de <strong>30 segundos</strong> para
-            manter a partida dinâmica e sem travamentos.
-          </p>
-        </div>
-
-        <button class="btn-primary" onclick="fecharRegras()">
-          Entendi, Voltar
-        </button>
       </div>
     </div>
 
-    <!-- Overlay 1: Entrada / Criação -->
+    <!-- Overlay: Regras -->
+    <div class="overlay" id="rules-overlay" style="display: none">
+      <div class="modal-card">
+        <h2>📖 Regras do Jogo</h2>
+
+        <div class="rules-section">
+          <h3>🎯 1. Objetivo</h3>
+          <p>
+            Acumular Renda Passiva até superar suas despesas na
+            <strong>Corrida dos Ratos</strong>, entrar na
+            <strong>Pista Rápida</strong> e comprar o seu Sonho!
+          </p>
+        </div>
+
+        <div class="rules-section">
+          <h3>🐭 2. Corrida dos Ratos</h3>
+          <p>
+            • <strong>💰 Payday:</strong> Ao passar ou parar (casas 0 e 5),
+            recebe seu Salário + Renda Passiva líquida.<br />
+            • <strong>📈 Oportunidades:</strong> Compre imóveis, ações ou cotas
+            para gerar renda mensal.<br />
+            • <strong>🏪 Mercado:</strong> Venda seus ativos por ofertas
+            lucrativas.<br />
+            • <strong>💸 Besteiras:</strong> Despesas obrigatórias imediatas.
+          </p>
+        </div>
+
+        <div class="rules-section">
+          <h3>🏎️ 3. Pista Rápida & Vitória</h3>
+          <p>
+            • Quando <strong>Renda Passiva > Despesas</strong>, avance para a
+            Pista Rápida.<br />
+            • Compre grandes negócios e o primeiro a adquirir seu
+            <strong>💎 Sonho</strong> vence!
+          </p>
+        </div>
+
+        <div class="rules-section">
+          <h3>🏦 4. Empréstimos & Tempo</h3>
+          <p>
+            • Limite máximo de empréstimo: <strong>R$ 10.000,00</strong>.<br />
+            • Turnos com limite de <strong>30 segundos</strong>.
+          </p>
+        </div>
+
+        <button class="btn-primary" onclick="fecharRegras()">Voltar</button>
+      </div>
+    </div>
+
+    <!-- Overlay 1: Entrada -->
     <div class="overlay" id="entry-overlay">
       <div class="modal-card">
         <h2>🎲 Cashflow Online Multiplayer</h2>
@@ -993,7 +1039,7 @@
             margin-bottom: 12px;
           "
         >
-          Partidas com salas online, IA e limite de 30s por turno.
+          Simulação financeira com suporte online e IA.
         </p>
 
         <div style="text-align: center; margin-bottom: 14px">
@@ -1054,7 +1100,7 @@
       </div>
     </div>
 
-    <!-- Overlay 2: Sala de Espera (Lobby) -->
+    <!-- Overlay 2: Lobby -->
     <div class="overlay" id="lobby-overlay" style="display: none">
       <div class="modal-card">
         <h2>
@@ -1066,7 +1112,7 @@
         </h2>
 
         <div class="share-box">
-          <p>Envie o link de convite para seus amigos jogarem junto:</p>
+          <p>Envie o link para seus amigos jogarem junto:</p>
           <button class="btn-copy" onclick="copiarLinkConvite()">
             📋 Copiar Link de Convite
           </button>
@@ -1083,7 +1129,7 @@
 
         <div
           class="rules-section"
-          style="background: #07101f; border-color: #334155; margin-top: 8px"
+          style="background: #07101f; border-color: #334155"
         >
           <h3
             style="
@@ -1110,11 +1156,11 @@
             </button>
           </h3>
           <p style="font-size: 11px; color: #cbd5e1; margin-top: 4px">
-            1. Compre <strong>Oportunidades</strong> na Corrida dos Ratos.<br />
+            1. Compre <strong>Oportunidades</strong> e acumule Renda Passiva.<br />
             2. Ao ter <strong>Renda Passiva > Despesas</strong>, entre na
             <strong>Pista Rápida</strong>.<br />
             3. Quem comprar o seu <strong>💎 Sonho</strong> primeiro,
-            <strong>vence o jogo!</strong>
+            <strong>VENCE A PARTIDA!</strong>
           </p>
         </div>
 
@@ -1162,7 +1208,6 @@
     <!-- Mesa Principal -->
     <div class="game-wrapper">
       <div class="boards-column">
-        <!-- Timer Bar -->
         <div class="timer-container" id="timer-box">
           <div class="timer-header">
             <span id="timer-label">⏱️ Tempo do Turno:</span>
@@ -1210,9 +1255,16 @@
               <strong id="label-banco-jogador">Empréstimo:</strong> R$
               <span id="cur-divida">0.00</span> (Juros: R$
               <span id="cur-juros">0.00</span>/mês)
+              <span style="font-size: 10px; color: #94a3b8; display: block"
+                >Limite Máx: R$ 10.000,00</span
+              >
             </div>
             <div>
-              <button class="btn-bank add" onclick="pegarEmprestimo()">
+              <button
+                class="btn-bank add"
+                id="btn-add-emprestimo"
+                onclick="pegarEmprestimo()"
+              >
                 + R$ 1.000
               </button>
               <button class="btn-bank pay" onclick="quitarEmprestimo()">
@@ -1248,9 +1300,9 @@
               <input
                 type="number"
                 id="input-qtd-acoes"
-                value="100"
-                min="10"
-                step="10"
+                value="10"
+                min="1"
+                step="1"
                 style="
                   background: #090d16;
                   color: #fff;
@@ -1263,7 +1315,7 @@
                 oninput="atualizarCalculoAcoes()"
               />
               <span style="font-size: 10px; margin-left: 6px; color: #38bdf8"
-                >Total: R$ <span id="total-custo-acoes">1000.00</span></span
+                >Total: R$ <span id="total-custo-acoes">0.00</span></span
               >
             </div>
 
@@ -1296,7 +1348,13 @@
               >
                 💰 Vender ao Mercado
               </button>
-              <button class="btn-passar" onclick="passarVez()">Manter</button>
+              <button
+                class="btn-passar"
+                id="btn-modal-mercado-passar"
+                onclick="passarVez()"
+              >
+                Manter Ativo
+              </button>
             </div>
 
             <div id="actions-besteira" style="display: none; margin-top: 8px">
@@ -1326,7 +1384,6 @@
             Aguardando o início da rodada...
           </div>
 
-          <!-- Chat & Reações Rápidas -->
           <div class="social-bar">
             <div class="quick-reactions">
               <span style="font-size: 10px; color: #94a3b8; font-weight: bold"
@@ -1356,7 +1413,7 @@
                 type="text"
                 id="chat-msg-input"
                 class="chat-input"
-                placeholder="Mensagem rápida (ex: Boa jogada!)..."
+                placeholder="Mensagem rápida..."
                 onkeydown="if (event.key === 'Enter') enviarMensagemChat();"
               />
               <button class="btn-send" onclick="enviarMensagemChat()">
@@ -1386,13 +1443,13 @@
 
       let tempoRestante = 30;
       let timerInterval = null;
+      let botFailSafeTimer = null;
 
       const filaMensagens = [];
       let processandoFila = false;
 
       const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-      // Áudio
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       function tocarSom(frequencias, tipo = "sine", duracao = 0.1) {
         frequencias.forEach((freq, i) => {
@@ -1421,7 +1478,7 @@
       const somCompra = () => tocarSom([440, 554, 659], "sine", 0.12);
       const somBesteira = () => tocarSom([350, 260, 180], "sawtooth", 0.25);
       const somVitoria = () => {
-        tocarSom([523, 659, 783, 1046, 1318], "triangle", 0.35);
+        tocarSom([523, 659, 783, 1046, 1318, 1568], "triangle", 0.4);
         dispararConfetes();
       };
 
@@ -1430,7 +1487,7 @@
         const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        const pieces = Array.from({ length: 140 }, () => ({
+        const pieces = Array.from({ length: 160 }, () => ({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height - canvas.height,
           size: Math.random() * 8 + 4,
@@ -1448,7 +1505,7 @@
             ctx.fillStyle = p.color;
             ctx.fillRect(p.x, p.y, p.size, p.size);
           });
-          if (frame++ < 200) requestAnimationFrame(render);
+          if (frame++ < 300) requestAnimationFrame(render);
           else ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
         render();
@@ -1482,30 +1539,40 @@
         6: { x: 0, y: 180 },
       };
 
-      async function animarDado3D(valor, nomeJogador) {
+      async function animarDado3D(valor, nomeJogador, isBot = false) {
         const overlay = document.getElementById("dice-overlay");
         const cube = document.getElementById("dice-cube");
         const label = document.getElementById("dice-player-label");
 
-        label.innerHTML = `🎲 <strong>${nomeJogador}</strong> rolando o dado...`;
+        label.innerHTML = `🎲 <strong>${nomeJogador}</strong> rolando...`;
         overlay.style.display = "flex";
         somDado();
 
-        const voltasExtrasX = (Math.floor(Math.random() * 3) + 3) * 360;
-        const voltasExtrasY = (Math.floor(Math.random() * 3) + 3) * 360;
+        const voltasExtrasX = (Math.floor(Math.random() * 2) + 2) * 360;
+        const voltasExtrasY = (Math.floor(Math.random() * 2) + 2) * 360;
         const target = rotacaoFace[valor] || rotacaoFace[1];
 
         cube.style.transform = `rotateX(${voltasExtrasX + target.x}deg) rotateY(${voltasExtrasY + target.y}deg)`;
 
-        await sleep(1300);
-        label.innerHTML = `🎲 <strong>${nomeJogador}</strong> tirou <span style="font-size:24px; color:#4ade80;">${valor}</span>!`;
-        await sleep(700);
+        const tempoEsperaGiro = isBot ? 500 : 700;
+        const tempoEsperaResultado = isBot ? 250 : 400;
+
+        await sleep(tempoEsperaGiro);
+        label.innerHTML = `🎲 <strong>${nomeJogador}</strong> tirou <span style="font-size:22px; color:#4ade80;">${valor}</span>!`;
+        await sleep(tempoEsperaResultado);
 
         overlay.style.display = "none";
       }
 
       function iniciarTimerTurno() {
         if (timerInterval) clearInterval(timerInterval);
+
+        if (estadoJogo && estadoJogo.jogo_finalizado) {
+          document.getElementById("timer-label").innerText =
+            "👑 Partida Concluída!";
+          document.getElementById("timer-count").innerText = "FIM";
+          return;
+        }
 
         const cur = estadoJogo
           ? estadoJogo.jogadores.find(
@@ -1518,7 +1585,7 @@
 
         if (cur && cur.is_bot) {
           timerLabel.innerText = "🤖 Vez do Robô:";
-          label.innerText = "Pensando...";
+          label.innerText = "Jogando...";
           label.style.color = "#38bdf8";
           bar.className = "timer-bar-fill";
           bar.style.width = "100%";
@@ -1559,6 +1626,7 @@
         }
       }
 
+      // 3 Casas Besteira no Tabuleiro Oficial
       const casasRatos = [
         { id: 0, nome: "💰 Payday", tipo: "payday", col: 1, row: 1 },
         {
@@ -1743,6 +1811,8 @@
             iniciarTimerTurno();
             processarTurno();
           } else if (data.tipo === "acao_executada") {
+            const isBot = data.is_bot || false;
+
             if (data.estado.movimento) {
               const targetId =
                 data.jogador_id_movimento ||
@@ -1755,17 +1825,23 @@
               await animarDado3D(
                 data.estado.movimento.dado,
                 j ? j.nome : "Jogador",
+                isBot,
               );
 
               document.getElementById("log").innerHTML =
                 data.estado.log_bot ||
                 `🎲 ${j ? j.nome : "Jogador"} tirou <strong>${data.estado.movimento.dado}</strong>!`;
               if (j && targetId)
-                await animarPassos(targetId, data.estado.movimento.dado, total);
+                await animarPassos(
+                  targetId,
+                  data.estado.movimento.dado,
+                  total,
+                  isBot,
+                );
               if (data.estado.movimento.passou_payday) somPayday();
             } else if (data.estado.mensagem) {
               document.getElementById("log").innerHTML =
-                `✅ ${data.estado.mensagem}`;
+                `${data.estado.sucesso === false ? "❌" : "✅"} ${data.estado.mensagem}`;
             }
 
             estadoJogo = data.estado;
@@ -1981,13 +2057,23 @@
             me.emprestimos.toFixed(2);
           document.getElementById("cur-juros").innerText =
             me.juros_emprestimo.toFixed(2);
+
+          const btnAdd = document.getElementById("btn-add-emprestimo");
+          if (btnAdd) {
+            btnAdd.disabled = me.emprestimos >= 10000.0;
+          }
+
           const lista = document.getElementById("assets-list");
           if (me.ativos && me.ativos.length > 0) {
             lista.innerHTML = me.ativos
               .map((a) => {
-                if (a.tipo in ["acao", "cripto"])
-                  return `<div class="asset-item"><span>📈 ${a.quantidade}x ${a.nome}</span><span style="color:#38bdf8;">(Custo: R$ ${a.preco_unitario.toFixed(2)})</span></div>`;
-                return `<div class="asset-item"><span>🏠 ${a.nome}</span><span style="color:#4ade80;">+R$ ${a.renda.toFixed(2)}/mês</span></div>`;
+                if (["acao", "cripto"].includes(a.tipo)) {
+                  const rendaTotal = a.renda * a.quantidade;
+                  const rendaTxt =
+                    rendaTotal > 0 ? ` (+R$ ${rendaTotal.toFixed(2)}/mês)` : "";
+                  return `<div class="asset-item"><span>📈 ${a.quantidade}x ${a.nome}</span><span style="color:#38bdf8;">(R$ ${a.preco_unitario.toFixed(2)} un.)${rendaTxt}</span></div>`;
+                }
+                return `<div class="asset-item"><span>🏠 ${a.nome}</span><span style="color:#4ade80;">+R$ ${Number(a.renda).toFixed(2)}/mês</span></div>`;
               })
               .join("");
           } else {
@@ -2005,18 +2091,45 @@
         desenharPeoes();
       }
 
-      async function animarPassos(jogadorId, passos, totalCasas) {
+      async function animarPassos(
+        jogadorId,
+        passos,
+        totalCasas,
+        isBot = false,
+      ) {
         const j = estadoJogo.jogadores.find((p) => p.id === jogadorId);
         if (!j) return;
+        const delayPasso = isBot ? 180 : 280;
         for (let i = 0; i < passos; i++) {
           j.posicao = (j.posicao + 1) % totalCasas;
           desenharPeoes();
           somPasso();
-          await sleep(700);
+          await sleep(delayPasso);
         }
       }
 
       async function processarTurno() {
+        if (botFailSafeTimer) clearTimeout(botFailSafeTimer);
+
+        if (estadoJogo && estadoJogo.jogo_finalizado && estadoJogo.vencedor) {
+          const v = estadoJogo.vencedor;
+          somVitoria();
+          document.getElementById("victory-winner-name").innerText =
+            `👑 ${v.nome} (${v.profissao})`;
+          document.getElementById("victory-stats-box").innerHTML = `
+                    <p><strong>💎 Sonho Realizado:</strong> ${v.sonho_titulo}</p>
+                    <p><strong>💰 Caixa Final Acumulado:</strong> R$ ${v.caixa.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                    <p><strong>📈 Renda Passiva Conquistada:</strong> R$ ${v.renda_passiva.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}/mês</p>
+                    <p><strong>⏱️ Turnos Totais da Partida:</strong> ${estadoJogo.total_turnos} rodadas</p>
+                `;
+          document.getElementById("victory-overlay").style.display = "flex";
+          document.getElementById("card-modal").style.display = "none";
+          document.getElementById("btn-dado").disabled = true;
+          document.getElementById("log").innerHTML =
+            `👑 <strong>${v.nome} VENCEU A PARTIDA!</strong>`;
+          return;
+        }
+
         const cur = estadoJogo.jogadores.find(
           (j) => j.id === estadoJogo.jogador_atual_id,
         );
@@ -2031,6 +2144,21 @@
           modal.style.display = "none";
           document.getElementById("log").innerHTML =
             `🤖 Vez de <strong>${cur.nome}</strong> (IA)...`;
+
+          const isHost = estadoJogo.jogadores[0].id === myClientId;
+          if (isHost) {
+            botFailSafeTimer = setTimeout(() => {
+              if (
+                ws &&
+                ws.readyState === WebSocket.OPEN &&
+                estadoJogo &&
+                estadoJogo.is_bot_atual &&
+                !estadoJogo.jogo_finalizado
+              ) {
+                ws.send(JSON.stringify({ acao: "jogar_bot" }));
+              }
+            }, 2500);
+          }
           return;
         }
 
@@ -2063,17 +2191,24 @@
             document.getElementById("card-desc").innerText =
               ev.descricao || "Negócio da Pista Rápida.";
 
-            if (ev.subtipo in ["acao", "cripto"]) {
+            if (["acao", "cripto"].includes(ev.subtipo)) {
               precoAcaoAtiva = ev.preco_unitario;
               document.getElementById("card-custo-container").innerHTML =
                 `<strong>Preço por Cota:</strong> R$ <span style="color:#f87171;">${ev.preco_unitario.toFixed(2)}</span>`;
               document.getElementById("card-renda-box").style.display =
                 ev.renda > 0 ? "block" : "none";
               if (ev.renda > 0)
-                document.getElementById("card-renda").innerText = Number(
-                  ev.renda,
-                ).toFixed(2);
+                document.getElementById("card-renda").innerText =
+                  `${Number(ev.renda).toFixed(2)} / cota`;
+
               boxQtdAcoes.style.display = "block";
+
+              const maxAffordable = Math.max(
+                1,
+                Math.floor(cur.caixa / precoAcaoAtiva),
+              );
+              const defaultQtd = Math.min(10, maxAffordable);
+              document.getElementById("input-qtd-acoes").value = defaultQtd;
               atualizarCalculoAcoes();
             } else {
               boxQtdAcoes.style.display = "none";
@@ -2095,17 +2230,43 @@
             actBesteira.style.display = "none";
             modal.style.display = "block";
             btnDado.disabled = true;
-          } else if (ev.tipo === "mercado" && ev.possui_ativo) {
+          } else if (ev.tipo === "mercado") {
             somPayday();
             boxQtdAcoes.style.display = "none";
             modal.className = "modal-mercado";
             document.getElementById("card-titulo").innerText =
-              `🏪 Oferta: ${ev.titulo}`;
-            document.getElementById("card-desc").innerText = ev.descricao;
-            document.getElementById("card-custo-container").innerHTML =
-              `<strong>Oferta de Compra:</strong> R$ <span style="color:#4ade80;">${ev.preco_oferta.toFixed(2)}</span>`;
-            document.getElementById("card-renda-box").style.display = "none";
+              `🏪 Mercado: ${ev.titulo}`;
 
+            if (ev.possui_ativo) {
+              document.getElementById("card-desc").innerHTML =
+                `${ev.descricao}<br><br><span style="color:#4ade80; font-weight:bold;">✅ Você possui este ativo (${ev.alvo_nome}) disponível para venda!</span>`;
+
+              if (["acao", "cripto"].includes(ev.subtipo)) {
+                document.getElementById("card-custo-container").innerHTML =
+                  `<strong>Oferta por Cota:</strong> R$ <span style="color:#4ade80;">${ev.preco_oferta.toFixed(2)}</span> (Total: <strong>R$ ${ev.valor_total_venda.toFixed(2)}</strong> por ${ev.qtd_cotas} cotas)`;
+              } else {
+                document.getElementById("card-custo-container").innerHTML =
+                  `<strong>Proposta de Compra:</strong> R$ <span style="color:#4ade80;">${ev.valor_total_venda.toFixed(2)}</span>`;
+              }
+
+              document.getElementById("btn-modal-vender").innerText =
+                `💰 Vender por R$ ${ev.valor_total_venda.toFixed(2)}`;
+              document.getElementById("btn-modal-vender").style.display =
+                "block";
+              document.getElementById("btn-modal-mercado-passar").innerText =
+                "Manter Ativo";
+            } else {
+              document.getElementById("card-desc").innerHTML =
+                `${ev.descricao}<br><br><span style="color:#94a3b8;">⚠️ Você não possui o ativo <strong>${ev.alvo_nome}</strong> na sua carteira no momento.</span>`;
+              document.getElementById("card-custo-container").innerHTML =
+                `<strong>Valor da Oferta Geral:</strong> R$ ${ev.preco_oferta.toFixed(2)}`;
+              document.getElementById("btn-modal-vender").style.display =
+                "none";
+              document.getElementById("btn-modal-mercado-passar").innerText =
+                "Entendido / Continuar";
+            }
+
+            document.getElementById("card-renda-box").style.display = "none";
             actInvestir.style.display = "none";
             actMercado.style.display = "flex";
             actBesteira.style.display = "none";
@@ -2132,13 +2293,6 @@
         } else {
           modal.style.display = "none";
         }
-
-        if (cur.venceu_jogo) {
-          somVitoria();
-          document.getElementById("log").innerHTML =
-            `👑 <strong>${cur.nome} COMPROU SEU SONHO E VENCEU A PARTIDA!</strong>`;
-          btnDado.disabled = true;
-        }
       }
 
       function fazerJogadaHumano() {
@@ -2147,10 +2301,15 @@
       }
 
       function comprarAtivo() {
-        const qtd =
-          Number(document.getElementById("input-qtd-acoes").value) || 1;
-        if (ws && ws.readyState === WebSocket.OPEN)
+        const isCota =
+          document.getElementById("box-qtd-acoes").style.display !== "none";
+        const qtd = isCota
+          ? Number(document.getElementById("input-qtd-acoes").value) || 1
+          : 1;
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ acao: "comprar", quantidade: qtd }));
+        }
         somCompra();
         document.getElementById("card-modal").style.display = "none";
       }

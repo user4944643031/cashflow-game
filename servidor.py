@@ -14,7 +14,7 @@ class Sala:
     def __init__(self, codigo: str, host_id: str):
         self.codigo = codigo
         self.host_id = host_id
-        self.status = "lobby"  # 'lobby' ou 'jogando'
+        self.status = "lobby"
         self.jogadores_lobby: List[dict] = []
         self.jogo: Optional[Jogo] = None
         self.conexoes: Dict[str, WebSocket] = {}
@@ -32,8 +32,8 @@ class Sala:
         if self.status != "jogando" or not self.jogo:
             return
 
-        if any(j.venceu_jogo for j in self.jogo.jogadores):
-            return
+        if self.jogo.vencedor:
+            return  # Fim de jogo definitivo
 
         if self.jogo.jogador_atual.is_bot:
             self.bot_task = asyncio.create_task(self._executar_loop_bots())
@@ -42,25 +42,31 @@ class Sala:
 
     async def _executar_loop_bots(self):
         try:
+            await asyncio.sleep(0.6)
+
             while self.status == "jogando" and self.jogo and self.jogo.jogador_atual.is_bot:
-                if any(j.venceu_jogo for j in self.jogo.jogadores):
+                if self.jogo.vencedor:
                     break
-                
-                await asyncio.sleep(1.8)
-                if not self.jogo.jogador_atual.is_bot:
-                    break
-                
+
                 bot_id = self.jogo.jogador_atual.id
                 resultado = self.jogo.processar_jogada_bot()
                 await self.broadcast({
                     "tipo": "acao_executada",
                     "jogador_id_movimento": bot_id,
+                    "is_bot": True,
                     "estado": resultado
                 })
-                await asyncio.sleep(2.2)
+
+                if self.jogo.vencedor:
+                    break
+
+                if self.jogo.jogador_atual.is_bot:
+                    await asyncio.sleep(1.6)
+                else:
+                    break
 
             if self.status == "jogando" and self.jogo and not self.jogo.jogador_atual.is_bot:
-                if not any(j.venceu_jogo for j in self.jogo.jogadores):
+                if not self.jogo.vencedor:
                     self.timer_task = asyncio.create_task(self._executar_timer_30s())
         except asyncio.CancelledError:
             pass
@@ -71,11 +77,14 @@ class Sala:
         try:
             await asyncio.sleep(30)
             if self.status == "jogando" and self.jogo and not self.jogo.jogador_atual.is_bot:
+                if self.jogo.vencedor:
+                    return
                 humano_id = self.jogo.jogador_atual.id
                 resultado = self.jogo.forcar_timeout_atual()
                 await self.broadcast({
                     "tipo": "acao_executada",
                     "jogador_id_movimento": humano_id if "movimento" in resultado else None,
+                    "is_bot": False,
                     "estado": resultado,
                     "timeout": True
                 })
@@ -169,7 +178,7 @@ async def entrar_sala(data: EntrarSalaRequest):
         return {"sucesso": False, "mensagem": "Partida em andamento."}
 
     if len(sala.jogadores_lobby) >= 4:
-        return {"sucesso": False, "mensagem": "A sala já está cheia (máx 4 jogadores)."}
+        return {"sucesso": False, "mensagem": "A sala já está cheia."}
     
     existente = next((j for j in sala.jogadores_lobby if j["id"] == data.client_id), None)
     if not existente:
@@ -287,16 +296,21 @@ async def websocket_endpoint(websocket: WebSocket, codigo_sala: str, client_id: 
                 continue
 
             jogo = sala.jogo
-            if not jogo:
+            if not jogo or jogo.vencedor:
                 continue
 
-            if acao == "jogar_humano":
+            if acao == "jogar_bot":
+                if jogo.jogador_atual.is_bot:
+                    sala.processar_fluxo_pos_acao()
+
+            elif acao == "jogar_humano":
                 if jogo.jogador_atual.id == client_id:
                     humano_id = jogo.jogador_atual.id
                     resultado = jogo.processar_jogada_humano()
                     await sala.broadcast({
                         "tipo": "acao_executada",
                         "jogador_id_movimento": humano_id,
+                        "is_bot": False,
                         "estado": resultado
                     })
                     
@@ -310,38 +324,39 @@ async def websocket_endpoint(websocket: WebSocket, codigo_sala: str, client_id: 
                 if jogo.jogador_atual.id == client_id:
                     qtd = msg.get("quantidade", 1)
                     resultado = jogo.comprar_atual(quantidade=qtd)
-                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
-                    sala.processar_fluxo_pos_acao()
+                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado, "is_bot": False})
+                    if resultado.get("sucesso"):
+                        sala.processar_fluxo_pos_acao()
 
             elif acao == "passar":
                 if jogo.jogador_atual.id == client_id:
                     resultado = jogo.passar_atual()
-                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado, "is_bot": False})
                     sala.processar_fluxo_pos_acao()
 
             elif acao == "pagar_besteira":
                 if jogo.jogador_atual.id == client_id:
                     resultado = jogo.pagar_besteira_atual()
-                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado, "is_bot": False})
                     sala.processar_fluxo_pos_acao()
 
             elif acao == "vender_mercado":
                 if jogo.jogador_atual.id == client_id:
                     resultado = jogo.vender_ativo_mercado_atual()
-                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+                    await sala.broadcast({"tipo": "acao_executada", "estado": resultado, "is_bot": False})
                     sala.processar_fluxo_pos_acao()
 
             elif acao == "entrar_pista_rapida":
                 resultado = jogo.entrar_pista_rapida_atual(client_id)
-                await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+                await sala.broadcast({"tipo": "acao_executada", "estado": resultado, "is_bot": False})
 
             elif acao == "emprestimo":
                 resultado = jogo.emprestimo_jogador(client_id)
-                await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+                await sala.broadcast({"tipo": "acao_executada", "estado": resultado, "is_bot": False})
 
             elif acao == "quitar_emprestimo":
                 resultado = jogo.quitar_emprestimo_jogador(client_id)
-                await sala.broadcast({"tipo": "acao_executada", "estado": resultado})
+                await sala.broadcast({"tipo": "acao_executada", "estado": resultado, "is_bot": False})
 
     except WebSocketDisconnect:
         if client_id in sala.conexoes:
